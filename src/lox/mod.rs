@@ -1,12 +1,13 @@
 use crate::error::LoxResult;
 use std::{io::Write, path::PathBuf};
 
+mod token;
+
+use token::Token;
+
 pub struct Lexer {
     src: String,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Token;
 
 impl Lexer {
     pub fn new(src: String) -> Self {
