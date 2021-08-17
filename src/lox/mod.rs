@@ -17,6 +17,7 @@ impl Lexer {
         return Vec::new();
     }
 }
+
 pub struct Lox;
 
 impl Lox {
