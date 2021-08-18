@@ -24,6 +24,7 @@ pub(crate) enum LoxError {
     ScanError(ScanError),
     IoError(std::io::Error),
     ParseIntError(std::num::ParseIntError),
+    ParseFloatError(std::num::ParseFloatError),
 }
 
 impl std::error::Error for LoxError {}
@@ -34,6 +35,7 @@ impl std::fmt::Display for LoxError {
             LoxError::ScanError(e) => write!(f, "{}", e),
             LoxError::IoError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseIntError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::ParseFloatError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
         }
     }
 }
@@ -52,6 +54,12 @@ impl From<ScanError> for LoxError {
 impl From<std::num::ParseIntError> for LoxError {
     fn from(err: std::num::ParseIntError) -> Self {
         Self::ParseIntError(err)
+    }
+}
+
+impl From<std::num::ParseFloatError> for LoxError {
+    fn from(err: std::num::ParseFloatError) -> Self {
+        Self::ParseFloatError(err)
     }
 }
 
@@ -102,7 +110,7 @@ impl fmt::Display for ScanError {
         let line = format!(
             "{space} {sep}\n{} {sep}\t{}\n{space} {sep}\t{here}",
             self.pos.start().line_number().to_string().blue(),
-            self.src_line,
+            self.src_line.trim(),
             sep = sep,
             here = here.blue(),
             space = pad(self.pos.start().line_number().to_string().len(), ' '),

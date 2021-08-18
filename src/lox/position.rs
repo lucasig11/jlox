@@ -1,4 +1,5 @@
-use std::num::NonZeroU32;
+use crate::lox::LoxResult;
+use std::{iter::Peekable, num::NonZeroU32, str::Chars};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Position {
@@ -69,29 +70,70 @@ impl From<Position> for Span {
     }
 }
 
-pub struct Cursor {
+type InnerIter<'a> = Peekable<Chars<'a>>;
+#[derive(Debug)]
+pub(crate) struct Cursor<'a> {
+    inner: InnerIter<'a>,
     pos: Position,
 }
 
-impl Cursor {
-    pub fn new() -> Self {
+impl<'a> Cursor<'a> {
+    #[inline]
+    pub fn new(inner: InnerIter<'a>) -> Self {
         Self {
+            inner,
             pos: Position::new(1, 1),
         }
     }
 
+    #[inline]
     pub fn pos(&self) -> Position {
         self.pos
     }
 
+    #[inline]
     pub fn next_line(&mut self) {
         let line = self.pos.line_number() + 1;
-        self.pos = Position::new(line, 1)
+        self.pos = Position::new(line, 1);
     }
 
+    #[inline]
     pub fn next_column(&mut self) {
         let line = self.pos.line_number();
         let col = self.pos.column_number() + 1;
-        self.pos = Position::new(line, col)
+        self.pos = Position::new(line, col);
+    }
+
+    pub fn next(&mut self) -> Option<char> {
+        self.inner.next()
+    }
+
+    pub fn consume_until(&mut self, ch: char) {
+        while let Some(t) = self.inner.next() {
+            if t == ch {
+                break;
+            }
+        }
+    }
+
+    pub fn peek_next(&mut self) -> Option<char> {
+        self.inner.peek().copied()
+    }
+
+    pub fn take_char_while(
+        &mut self,
+        start: char,
+        mut f: impl FnMut(char) -> bool,
+    ) -> LoxResult<String> {
+        let mut buf = String::from(start);
+        while let Some(c) = self.peek_next() {
+            if !f(c) {
+                break;
+            }
+            self.next_column();
+            self.next();
+            buf.push(c);
+        }
+        Ok(buf)
     }
 }

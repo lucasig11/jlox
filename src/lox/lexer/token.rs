@@ -1,17 +1,17 @@
-use crate::lox::position::Span;
+use std::str::FromStr;
+
+use crate::{error::LoxError, lox::position::Span};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     kind: TokenKind,
-    lexeme: String,
     span: Span,
 }
 
 impl Token {
-    pub fn new<L: AsRef<str>, K: Into<TokenKind>>(kind: K, lexeme: L, span: Span) -> Self {
+    pub(crate) fn new<K: Into<TokenKind>>(kind: K, span: Span) -> Self {
         Self {
             kind: kind.into(),
-            lexeme: lexeme.as_ref().to_string(),
             span,
         }
     }
@@ -19,12 +19,12 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.kind, self.lexeme)
+        write!(f, "{}", self.kind)
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenKind {
+pub(crate) enum TokenKind {
     Keyword(Keyword),
     Punctuator(Punctuator),
     Identifier(Box<str>),
@@ -144,8 +144,8 @@ impl std::fmt::Display for Punctuator {
             match self {
                 Punctuator::OpenParen => "(",
                 Punctuator::CloseParen => ")",
-                Punctuator::OpenBlock => "[",
-                Punctuator::CloseBlock => "]",
+                Punctuator::OpenBlock => "{",
+                Punctuator::CloseBlock => "}",
                 Punctuator::Comma => ",",
                 Punctuator::Dot => ".",
                 Punctuator::Semicolon => ";",
@@ -215,8 +215,43 @@ impl std::fmt::Display for Keyword {
     }
 }
 
+impl FromStr for Keyword {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "and" => Ok(Keyword::And),
+            "class" => Ok(Keyword::Class),
+            "else" => Ok(Keyword::Else),
+            "let" => Ok(Keyword::Let),
+            "while" => Ok(Keyword::While),
+            "fn" => Ok(Keyword::Fn),
+            "for" => Ok(Keyword::For),
+            "if" => Ok(Keyword::If),
+            "nil" => Ok(Keyword::Nil),
+            "or" => Ok(Keyword::Or),
+            "print" => Ok(Keyword::Print),
+            "return" => Ok(Keyword::Return),
+            "super" => Ok(Keyword::Super),
+            "this" => Ok(Keyword::This),
+            "extends" => Ok(Keyword::Extends),
+            _ => Err(s.to_owned()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub enum Numeric {
-    Integer(usize),
+pub(crate) enum Numeric {
+    Integer(isize),
     Decimal(f64),
+}
+
+impl FromStr for Numeric {
+    type Err = LoxError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.contains('.') {
+            Ok(Self::Decimal(s.parse()?))
+        } else {
+            Ok(Self::Integer(s.parse()?))
+        }
+    }
 }

@@ -1,11 +1,10 @@
 use crate::error::LoxResult;
 use std::{io::Write, path::PathBuf};
 
+mod lexer;
 pub(crate) mod position;
-mod scanner;
-mod token;
 
-pub(crate) use scanner::Scanner;
+use lexer::Lexer;
 
 pub struct Lox;
 
@@ -34,7 +33,7 @@ impl Lox {
     }
 
     fn run<T: AsRef<str>>(src: String, src_filename: T) -> LoxResult<()> {
-        let lexer = Scanner::new(src_filename.as_ref().to_string(), src);
+        let lexer = Lexer::new(src_filename.as_ref().to_string(), &src);
         let tokens = lexer.scan_tokens()?;
 
         for token in tokens {

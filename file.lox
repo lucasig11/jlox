@@ -1,3 +1,7 @@
-()[]+-.;
-a
-
+// this is a comment
+fn main() {
+	let foo;  	
+	let a = 1 + 2;
+	a += 1;
+	foo = "bar";
+}
