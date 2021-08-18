@@ -9,6 +9,10 @@ use token::{Numeric, Punctuator, Token, TokenKind};
 
 use self::token::Keyword;
 
+pub(crate) trait Tokenizer {
+    fn lex<'a>(s: &str, lexer: &mut Lexer<'a>) -> LoxResult<()>;
+}
+
 pub struct Lexer<'a> {
     src: String,
     filename: String,
@@ -81,10 +85,10 @@ impl<'a> Lexer<'a> {
     }
 
     // TODO: create Tokenizer trait
-    fn lex_numeric(&mut self, ch: char) -> LoxResult<()> {
-        let mut buf = String::from(ch);
+    fn lex_numeric(&mut self, start: char) -> LoxResult<()> {
+        let mut buf = String::from(start);
         loop {
-            let c = match self.buffer.next() {
+            let c = match self.buffer.peek_next() {
                 Some(c) if c.is_digit(10) => c,
                 Some(c @ '.') => match self.buffer.peek_next() {
                     Some(d) if d.is_digit(10) => c,
@@ -101,6 +105,7 @@ impl<'a> Lexer<'a> {
                 _ => break,
             };
             self.buffer.next_column();
+            self.buffer.next();
             buf.push(c);
         }
         self.add_token(TokenKind::numeric_literal(buf.parse::<Numeric>()?));
@@ -114,7 +119,11 @@ impl<'a> Lexer<'a> {
             .parse::<Keyword>()
         {
             Ok(kw) => TokenKind::keyword(kw),
-            Err(ident) => TokenKind::identifier(ident),
+            Err(ident) => match ident.as_str() {
+                "true" => true.into(),
+                "false" => false.into(),
+                _ => TokenKind::identifier(ident),
+            },
         };
         self.add_token(ident);
         Ok(())
