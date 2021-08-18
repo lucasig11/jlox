@@ -1,17 +1,17 @@
+use crate::lox::position::Span;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     kind: TokenKind,
     lexeme: String,
-    literal: String,
     span: Span,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, lexeme: String, literal: String, span: Span) -> Self {
+    pub fn new<L: AsRef<str>, K: Into<TokenKind>>(kind: K, lexeme: L, span: Span) -> Self {
         Self {
-            kind,
-            lexeme,
-            literal,
+            kind: kind.into(),
+            lexeme: lexeme.as_ref().to_string(),
             span,
         }
     }
@@ -19,33 +19,10 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {} {}", self.kind, self.lexeme, self.literal)
+        write!(f, "{} {}", self.kind, self.lexeme)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Position {
-    line: u32,
-    col: u32,
-}
-
-impl Position {
-    pub fn new(line: u32, col: u32) -> Self {
-        Self { line, col }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Span {
-    start: Position,
-    end: Position,
-}
-
-impl Span {
-    pub fn new(start: Position, end: Position) -> Self {
-        Self { start, end }
-    }
-}
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Keyword(Keyword),
@@ -56,6 +33,64 @@ pub enum TokenKind {
     BooleanLiteral(bool),
     Comment,
     EOF,
+}
+
+impl From<bool> for TokenKind {
+    fn from(oth: bool) -> Self {
+        Self::BooleanLiteral(oth)
+    }
+}
+
+impl From<Keyword> for TokenKind {
+    fn from(kw: Keyword) -> Self {
+        Self::Keyword(kw)
+    }
+}
+
+impl From<Punctuator> for TokenKind {
+    fn from(punc: Punctuator) -> Self {
+        Self::Punctuator(punc)
+    }
+}
+
+impl From<Numeric> for TokenKind {
+    fn from(num: Numeric) -> Self {
+        Self::NumericLiteral(num)
+    }
+}
+
+impl TokenKind {
+    pub fn keyword(kw: Keyword) -> Self {
+        Self::Keyword(kw)
+    }
+
+    pub fn punctuator(punc: Punctuator) -> Self {
+        Self::Punctuator(punc)
+    }
+
+    pub fn identifier<I: Into<Box<str>>>(ident: I) -> Self {
+        Self::Identifier(ident.into())
+    }
+
+    pub fn string_literal<S: Into<Box<str>>>(lit: S) -> Self {
+        Self::StringLiteral(lit.into())
+    }
+
+    pub fn numeric_literal<N: Into<Numeric>>(lit: N) -> Self {
+        Self::NumericLiteral(lit.into())
+    }
+
+    pub fn boolean_literal(b: bool) -> Self {
+        Self::BooleanLiteral(b)
+    }
+
+    pub fn comment() -> Self {
+        Self::Comment
+    }
+
+    pub fn eof() -> Self {
+        Self::EOF
+    }
 }
 
 impl std::fmt::Display for TokenKind {
@@ -78,8 +113,8 @@ impl std::fmt::Display for TokenKind {
 pub enum Punctuator {
     OpenParen,
     CloseParen,
-    OpenBracket,
-    CloseBracket,
+    OpenBlock,
+    CloseBlock,
     Assign,
     AssignAdd,
     AssignSub,
@@ -109,8 +144,8 @@ impl std::fmt::Display for Punctuator {
             match self {
                 Punctuator::OpenParen => "(",
                 Punctuator::CloseParen => ")",
-                Punctuator::OpenBracket => "[",
-                Punctuator::CloseBracket => "]",
+                Punctuator::OpenBlock => "[",
+                Punctuator::CloseBlock => "]",
                 Punctuator::Comma => ",",
                 Punctuator::Dot => ".",
                 Punctuator::Semicolon => ";",

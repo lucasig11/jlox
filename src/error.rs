@@ -1,7 +1,8 @@
 use colored::Colorize;
 use std::fmt;
 
-pub(crate) type LoxResult<T> = Result<T, Box<dyn std::error::Error>>;
+use crate::lox::position::Span;
+pub(crate) type LoxResult<T> = Result<T, LoxError>;
 
 #[derive(Debug, Clone)]
 pub enum ErrorLevel {
@@ -18,67 +19,104 @@ impl fmt::Display for ErrorLevel {
     }
 }
 
+#[derive(Debug)]
+pub(crate) enum LoxError {
+    ScanError(ScanError),
+    IoError(std::io::Error),
+    ParseIntError(std::num::ParseIntError),
+}
+
+impl std::error::Error for LoxError {}
+
+impl std::fmt::Display for LoxError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoxError::ScanError(e) => write!(f, "{}", e),
+            LoxError::IoError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::ParseIntError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+        }
+    }
+}
+
+impl From<std::io::Error> for LoxError {
+    fn from(err: std::io::Error) -> Self {
+        Self::IoError(err)
+    }
+}
+
+impl From<ScanError> for LoxError {
+    fn from(err: ScanError) -> Self {
+        Self::ScanError(err)
+    }
+}
+impl From<std::num::ParseIntError> for LoxError {
+    fn from(err: std::num::ParseIntError) -> Self {
+        Self::ParseIntError(err)
+    }
+}
+
 #[derive(Debug, Clone)]
-pub(crate) struct LoxError {
-    line: u32,
-    col: u32,
+pub(crate) struct ScanError {
+    pos: Span,
     level: ErrorLevel,
     src_line: String,
     file: String,
     message: String,
 }
 
-impl LoxError {
-    pub fn error<T: AsRef<str>>(
-        message: T,
-        file: T,
-        src_line: String,
-        position: (u32, u32),
-    ) -> Box<Self> {
-        Box::new(Self {
-            line: position.0,
-            col: position.1,
+impl ScanError {
+    pub fn error<T: AsRef<str>>(message: T, file: T, src_line: String, pos: Span) -> Self {
+        Self {
+            pos,
             level: ErrorLevel::Error,
             src_line,
             file: file.as_ref().to_string(),
             message: message.as_ref().to_string(),
-        })
+        }
     }
 }
 
-fn spaces(n: usize) -> String {
-    let mut s = String::new();
-    for _ in 0..n {
-        s.push(' ');
-    }
-    s
+fn pad(n: usize, ch: char) -> String {
+    std::iter::repeat(ch).take(n).collect()
 }
 
-impl fmt::Display for LoxError {
+impl fmt::Display for ScanError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let sep = "|".blue();
-        let here = format!("{}^-- here", spaces(self.col as usize - 1));
+        let here = format!(
+            "{}{}",
+            pad(
+                self.pos.start().column_number().saturating_sub(1) as usize,
+                ' '
+            ),
+            pad(
+                self.pos
+                    .end()
+                    .column_number()
+                    .saturating_add(1)
+                    .saturating_sub(self.pos.start().column_number()) as usize,
+                '^'
+            )
+            .red()
+        );
         let line = format!(
             "{space} {sep}\n{} {sep}\t{}\n{space} {sep}\t{here}",
-            self.line.to_string().blue(),
+            self.pos.start().line_number().to_string().blue(),
             self.src_line,
             sep = sep,
             here = here.blue(),
-            space = spaces(self.line.to_string().len()),
+            space = pad(self.pos.start().line_number().to_string().len(), ' '),
         );
 
         write!(
             f,
-            "{} {}\n  {} {}:{}:{}\n{}",
+            "{} {}\n  {} {}:{}\n{}",
             self.level,
             self.message,
             "-->".blue(),
             self.file,
-            self.line,
-            self.col,
+            self.pos.start(),
             line
         )
     }
 }
-
-impl std::error::Error for LoxError {}

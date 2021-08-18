@@ -13,7 +13,11 @@ struct Options {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Options::from_args();
     match opt.file {
-        Some(path) => lox::Lox::do_file(path)?,
+        Some(path) => {
+            if let Err(e) = lox::Lox::do_file(path) {
+                println!("{}", e);
+            }
+        }
         None => lox::Lox::do_repl()?,
     };
     Ok(())
