@@ -13,10 +13,12 @@ impl Lox {
         let src = std::fs::read_to_string(&path)?;
         Self::run(
             src,
-            path.to_str().ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Source-file name contains illegal UTF-8 characters",
-            ))?,
+            path.to_str().ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Source-file name contains illegal UTF-8 characters",
+                )
+            })?,
         )
     }
 
@@ -37,7 +39,7 @@ impl Lox {
         let tokens = lexer.scan_tokens()?;
 
         for token in tokens {
-            println!("{:#?}", token);
+            println!("{}", token);
         }
         Ok(())
     }

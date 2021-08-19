@@ -21,10 +21,10 @@ impl fmt::Display for ErrorLevel {
 
 #[derive(Debug)]
 pub(crate) enum LoxError {
-    ScanError(ScanError),
-    IoError(std::io::Error),
-    ParseIntError(std::num::ParseIntError),
-    ParseFloatError(std::num::ParseFloatError),
+    Scan(ScanError),
+    Io(std::io::Error),
+    ParseInt(std::num::ParseIntError),
+    ParseFloat(std::num::ParseFloatError),
 }
 
 impl std::error::Error for LoxError {}
@@ -32,34 +32,34 @@ impl std::error::Error for LoxError {}
 impl std::fmt::Display for LoxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LoxError::ScanError(e) => write!(f, "{}", e),
-            LoxError::IoError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::ParseIntError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::ParseFloatError(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::Scan(e) => write!(f, "{}", e),
+            LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::ParseInt(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::ParseFloat(e) => write!(f, "{} {}", ErrorLevel::Error, e),
         }
     }
 }
 
 impl From<std::io::Error> for LoxError {
     fn from(err: std::io::Error) -> Self {
-        Self::IoError(err)
+        Self::Io(err)
     }
 }
 
 impl From<ScanError> for LoxError {
     fn from(err: ScanError) -> Self {
-        Self::ScanError(err)
+        Self::Scan(err)
     }
 }
 impl From<std::num::ParseIntError> for LoxError {
     fn from(err: std::num::ParseIntError) -> Self {
-        Self::ParseIntError(err)
+        Self::ParseInt(err)
     }
 }
 
 impl From<std::num::ParseFloatError> for LoxError {
     fn from(err: std::num::ParseFloatError) -> Self {
-        Self::ParseFloatError(err)
+        Self::ParseFloat(err)
     }
 }
 

@@ -31,8 +31,6 @@ pub(crate) enum TokenKind {
     StringLiteral(Box<str>),
     NumericLiteral(Numeric),
     BooleanLiteral(bool),
-    Comment,
-    EOF,
 }
 
 impl From<bool> for TokenKind {
@@ -64,10 +62,6 @@ impl TokenKind {
         Self::Keyword(kw)
     }
 
-    pub fn punctuator(punc: Punctuator) -> Self {
-        Self::Punctuator(punc)
-    }
-
     pub fn identifier<I: Into<Box<str>>>(ident: I) -> Self {
         Self::Identifier(ident.into())
     }
@@ -78,18 +72,6 @@ impl TokenKind {
 
     pub fn numeric_literal<N: Into<Numeric>>(lit: N) -> Self {
         Self::NumericLiteral(lit.into())
-    }
-
-    pub fn boolean_literal(b: bool) -> Self {
-        Self::BooleanLiteral(b)
-    }
-
-    pub fn comment() -> Self {
-        Self::Comment
-    }
-
-    pub fn eof() -> Self {
-        Self::EOF
     }
 }
 
@@ -103,8 +85,6 @@ impl std::fmt::Display for TokenKind {
             TokenKind::NumericLiteral(Numeric::Integer(n)) => write!(f, "{}", n),
             TokenKind::NumericLiteral(Numeric::Decimal(n)) => write!(f, "{}", n),
             TokenKind::BooleanLiteral(ref b) => write!(f, "{}", b),
-            TokenKind::Comment => write!(f, "comment"),
-            TokenKind::EOF => write!(f, "end of file"),
         }
     }
 }

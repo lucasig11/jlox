@@ -70,10 +70,17 @@ impl From<Position> for Span {
     }
 }
 
+impl std::fmt::Display for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}..{}]", self.start, self.end)
+    }
+}
+
 type InnerIter<'a> = Peekable<Chars<'a>>;
+
 #[derive(Debug)]
 pub(crate) struct Cursor<'a> {
-    inner: InnerIter<'a>,
+    iter: InnerIter<'a>,
     pos: Position,
 }
 
@@ -81,7 +88,7 @@ impl<'a> Cursor<'a> {
     #[inline]
     pub fn new(inner: InnerIter<'a>) -> Self {
         Self {
-            inner,
+            iter: inner,
             pos: Position::new(1, 1),
         }
     }
@@ -105,11 +112,11 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn next(&mut self) -> Option<char> {
-        self.inner.next()
+        self.iter.next()
     }
 
     pub fn consume_until(&mut self, ch: char) {
-        while let Some(t) = self.inner.next() {
+        for t in &mut self.iter {
             if t == ch {
                 break;
             }
@@ -117,7 +124,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn peek_next(&mut self) -> Option<char> {
-        self.inner.peek().copied()
+        self.iter.peek().copied()
     }
 
     pub fn take_char_while(
