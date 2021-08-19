@@ -1,8 +1,30 @@
-// this is a comment
-fn main() {
-	let foo;  	
-	let bool = "false";
-	let a = 1 + 2;
-	a += 1;
-	foo = "bar";
+
+// Class DeclExpr
+class Person {
+	fn talk(msg) {
+		print "hello"
+	}
 }
+
+// Function DeclExpr
+fn main() {
+
+	// Initialize var to `nil`
+	let foo;
+	foo = "bar";
+
+	let person = Person();
+	person.talk();
+
+	let bool = false;
+
+	let a = 1 + 2;
+	a += 3.1415;
+
+	if a >= foo.len() {
+		return true;
+	} else {
+		return false;
+	}
+}
+
