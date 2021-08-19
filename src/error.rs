@@ -23,6 +23,7 @@ impl fmt::Display for ErrorLevel {
 pub(crate) enum LoxError {
     Scan(ScanError),
     Io(std::io::Error),
+    Parse(String),
     ParseInt(std::num::ParseIntError),
     ParseFloat(std::num::ParseFloatError),
 }
@@ -36,6 +37,7 @@ impl std::fmt::Display for LoxError {
             LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseInt(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseFloat(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::Parse(e) => write!(f, "{}", e),
         }
     }
 }
@@ -73,13 +75,13 @@ pub(crate) struct ScanError {
 }
 
 impl ScanError {
-    pub fn error<T: AsRef<str>>(message: T, file: T, src_line: String, pos: Span) -> Self {
+    pub fn error<T: Into<String>>(message: T, file: T, src_line: String, pos: Span) -> Self {
         Self {
             pos,
             level: ErrorLevel::Error,
             src_line,
-            file: file.as_ref().to_string(),
-            message: message.as_ref().to_string(),
+            file: file.into(),
+            message: message.into(),
         }
     }
 }
