@@ -86,29 +86,19 @@ impl<'a> Lexer<'a> {
 
     // TODO: create Tokenizer trait
     fn lex_numeric(&mut self, start: char) -> LoxResult<()> {
-        let mut buf = String::from(start);
-        loop {
-            let c = match self.buffer.peek_next() {
-                Some(c) if c.is_digit(10) => c,
-                Some(c @ '.') => match self.buffer.peek_next() {
-                    Some(d) if d.is_digit(10) => c,
-                    _ => {
-                        return Err(ScanError::error(
-                            "unterminated numeric literal",
-                            &self.filename,
-                            self.get_line_content(self.start.line_number()),
-                            Span::new(self.start, self.buffer.pos()),
-                        )
-                        .into())
-                    }
-                },
-                _ => break,
-            };
-            self.buffer.next_column();
-            self.buffer.next();
-            buf.push(c);
-        }
-        self.add_token(TokenKind::numeric_literal(buf.parse::<Numeric>()?));
+        let buf = self
+            .buffer
+            .take_char_while(start, |c| c.is_ascii_digit() || c == '.')?
+            .parse::<Numeric>()
+            .or_else(|e| {
+                Err(ScanError::error(
+                    e.to_string(),
+                    self.filename.as_str().to_string(),
+                    self.get_line_content(self.buffer.pos().line_number()),
+                    Span::new(self.start, self.buffer.pos()),
+                ))
+            })?;
+        self.add_token(TokenKind::numeric_literal(buf));
         Ok(())
     }
 

@@ -229,6 +229,9 @@ impl FromStr for Numeric {
     type Err = LoxError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.contains('.') {
+            if s.ends_with('.') {
+                return Err(LoxError::Parse("unterminated numeric literal".to_string()));
+            }
             Ok(Self::Decimal(s.parse()?))
         } else {
             Ok(Self::Integer(s.parse()?))
