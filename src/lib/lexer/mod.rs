@@ -1,7 +1,7 @@
 pub(crate) mod token;
 
 use crate::error::ScanError;
-use crate::lox::{
+use crate::lib::{
     position::{Cursor, Position, Span},
     LoxResult,
 };

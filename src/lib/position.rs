@@ -1,4 +1,4 @@
-use crate::lox::LoxResult;
+use crate::lib::LoxResult;
 use std::{iter::Peekable, num::NonZeroU32, str::Chars};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

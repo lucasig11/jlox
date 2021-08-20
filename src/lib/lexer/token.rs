@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{error::LoxError, lox::position::Span};
+use crate::{error::LoxError, lib::position::Span};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -15,6 +15,10 @@ impl Token {
             span,
         }
     }
+
+    pub(crate) fn kind(&self) -> &TokenKind {
+        &self.kind
+    }
 }
 
 impl std::fmt::Display for Token {
@@ -23,7 +27,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum TokenKind {
     Keyword(Keyword),
     Punctuator(Punctuator),
@@ -89,7 +93,7 @@ impl std::fmt::Display for TokenKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Punctuator {
     OpenParen,
     CloseParen,
@@ -150,7 +154,7 @@ impl std::fmt::Display for Punctuator {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keyword {
     And,
     Class,
@@ -219,7 +223,7 @@ impl FromStr for Keyword {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Numeric {
     Integer(isize),
     Decimal(f64),

@@ -1,7 +1,7 @@
 use colored::Colorize;
 use std::fmt;
 
-use crate::lox::position::Span;
+use crate::lib::position::Span;
 pub(crate) type LoxResult<T> = Result<T, LoxError>;
 
 #[derive(Debug, Clone)]

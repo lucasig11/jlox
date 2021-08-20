@@ -2,8 +2,10 @@ use crate::error::LoxResult;
 use std::{io::Write, path::PathBuf};
 
 mod lexer;
+pub(crate) mod parser;
 pub(crate) mod position;
 
+pub(crate) use lexer::token;
 use lexer::Lexer;
 
 pub struct Lox;
