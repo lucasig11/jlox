@@ -1,5 +1,5 @@
 use self::expression::Expr;
-use crate::error::{LoxError, LoxResult};
+use crate::error::{LoxResult, ParseError};
 
 use super::token::{Keyword, Punctuator, Token, TokenKind};
 
@@ -7,6 +7,7 @@ pub(crate) mod expression {
 
     use crate::lib::token::Token;
 
+    #[allow(dead_code)]
     /// Language expressions
     pub enum Expr {
         /// Binary expression (Expr, Operator, Expr)
@@ -49,10 +50,10 @@ pub(crate) mod expression {
     }
 }
 
-pub(crate) struct Parser {
-    tokens: Vec<Token>,
-    current: usize,
-}
+use Keyword::*;
+
+/// Converts a list of tokens into an _AST_.
+/// ```text
 /// expression     → equality ;
 /// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 /// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -60,74 +61,121 @@ pub(crate) struct Parser {
 /// factor         → unary ( ( "/" | "*" ) unary )* ;
 /// unary          → ( "!" | "-" ) unary | primary ;
 /// primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+/// ```
+pub(crate) struct Parser {
+    tokens: Vec<Token>,
+    current: usize,
+}
+
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
+
+    pub fn parse(mut self) -> LoxResult<Expr> {
+        self.expression()
+    }
+    /// Helper function for recovering from errors.
+    /// It walks the token buffer until it finds a statement boundary.
+    #[allow(dead_code)]
+    fn synchronize(&mut self) {
+        self.next();
+        while let Some(e) = self.peek() {
+            if let Some(t) = self.previous() {
+                if t.kind() == &TokenKind::Punctuator(Punctuator::Semicolon) {
+                    break;
+                }
+            }
+
+            if let TokenKind::Keyword(Class | Fn | Let | For | If | While | Print | Return) =
+                e.kind()
+            {
+                break;
+            }
+
+            self.next();
+        }
+    }
+
     /// Compares a list of tokens to the next token in the buffer,
     /// if the comparison returns true, walks the list and return true.
-    fn next_if_eq<T: Into<TokenKind> + Clone>(&mut self, tks: &[T]) -> bool {
+    fn multi_check<T: Into<TokenKind> + Clone>(&mut self, tks: &[T]) -> bool {
         for t in tks {
-            if self.check((*t).clone().into()) {
-                self.next();
+            let t: TokenKind = t.to_owned().into();
+            if self.next_if_check(&t) {
                 return true;
             }
         }
         false
     }
 
-    fn check(&self, kind: TokenKind) -> bool {
+    #[inline]
+    fn next_if_check(&mut self, kind: &TokenKind) -> bool {
+        if self.check(kind) {
+            self.next();
+            return true;
+        }
+        false
+    }
+
+    #[inline]
+    fn check(&self, kind: &TokenKind) -> bool {
         match self.peek() {
-            Some(e) if e.kind() == &kind => true,
+            Some(e) if e.kind() == kind => true,
             _ => false,
         }
     }
 
     fn next(&mut self) -> Option<&Token> {
-        if self.current < self.tokens.len() {
+        if self.current < self.tokens.len() - 1 {
             self.current += 1;
         }
         self.previous()
     }
 
+    #[inline]
     fn previous(&self) -> Option<&Token> {
         self.tokens.get(self.current - 1)
     }
 
+    #[inline]
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.current)
     }
 
-    fn expression(&mut self) -> Expr {
+    #[inline]
+    fn expression(&mut self) -> LoxResult<Expr> {
         self.equality()
     }
 
     /// Parse left associative tokens
-    fn parse_left<T, F>(&mut self, token_kinds: &[T], mut op_func: F) -> Expr
+    fn parse_left<T, F>(&mut self, token_kinds: &[T], mut op_func: F) -> LoxResult<Expr>
     where
         T: Into<TokenKind> + Clone,
-        F: FnMut(&mut Self) -> Expr,
+        F: FnMut(&mut Self) -> LoxResult<Expr>,
     {
-        let mut expr = op_func(self);
+        let mut expr = op_func(self)?;
 
-        while self.next_if_eq(token_kinds) {
+        while self.multi_check(token_kinds) {
             let op = match self.previous() {
                 Some(op) => op.clone(),
                 None => break,
             };
-            let rhs = op_func(self);
+            let rhs = op_func(self)?;
             expr = Expr::Binary(expr.into(), op, rhs.into());
         }
-        expr
+        Ok(expr)
     }
 
     /// Parse (in)equality expressions
-    fn equality(&mut self) -> Expr {
+    #[inline]
+    fn equality(&mut self) -> LoxResult<Expr> {
         self.parse_left(&[Punctuator::Eq, Punctuator::NotEq], Self::comparison)
     }
 
     /// Parse comparison expressions
-    fn comparison(&mut self) -> Expr {
+    #[inline]
+    fn comparison(&mut self) -> LoxResult<Expr> {
         self.parse_left(
             &[
                 Punctuator::GreaterThan,
@@ -140,45 +188,57 @@ impl Parser {
     }
 
     /// Addition and subtraction
-    fn term(&mut self) -> Expr {
+    #[inline]
+    fn term(&mut self) -> LoxResult<Expr> {
         self.parse_left(&[Punctuator::Add, Punctuator::Sub], Self::factor)
     }
 
     /// Division and multiplication
-    fn factor(&mut self) -> Expr {
+    #[inline]
+    fn factor(&mut self) -> LoxResult<Expr> {
         self.parse_left(&[Punctuator::Div, Punctuator::Mul], Self::unary)
     }
 
     /// Logic/Arithmetic negation
     fn unary(&mut self) -> LoxResult<Expr> {
-        if self.next_if_eq(&[Punctuator::Not, Punctuator::Sub]) {
-            let op = &self.previous().unwrap();
-            let rhs = self.unary();
-            return Ok(Expr::Unary(*op, rhs.into()));
+        if self.multi_check(&[Punctuator::Not, Punctuator::Sub]) {
+            let op = self.previous().unwrap().to_owned();
+            let rhs = self.unary()?;
+            return Ok(Expr::Unary(op, rhs.into()));
         }
         self.primary()
     }
 
     fn primary(&mut self) -> LoxResult<Expr> {
         if let Some(tk) = self.peek() {
-            match tk.kind() {
-                TokenKind::BooleanLiteral(_) => Ok(Expr::Literal(*tk)),
-                TokenKind::StringLiteral(_) => Ok(Expr::Literal(*tk)),
-                TokenKind::NumericLiteral(_) => Ok(Expr::Literal(*tk)),
-                TokenKind::Keyword(Keyword::Nil) => Ok(Expr::Literal(*tk)),
+            let exp = match tk.kind() {
+                TokenKind::BooleanLiteral(_) => Ok(Expr::Literal(tk.to_owned())),
+                TokenKind::StringLiteral(_) => Ok(Expr::Literal(tk.to_owned())),
+                TokenKind::NumericLiteral(_) => Ok(Expr::Literal(tk.to_owned())),
+                TokenKind::Keyword(Keyword::Nil) => Ok(Expr::Literal(tk.to_owned())),
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
-                    let expr = self.expression();
-                    if self.check(Punctuator::CloseParen.into()) {
-                        self.next();
-                        Ok(Expr::Grouping(expr.into()))
-                    } else {
-                        Err(LoxError::Parse("Expected ')' after expression".to_string()))
-                    }
+                    self.next();
+                    let expr = self.expression()?;
+                    self.consume(Punctuator::CloseParen, "expected ')' after expression")?;
+                    Ok(Expr::Grouping(expr.into()))
                 }
-                _ => todo!(),
+                _ => Err(ParseError::new(tk.to_owned(), "expected expression").into()),
+            };
+
+            if exp.is_ok() {
+                self.next();
             }
-        } else {
-            todo!()
+            return exp;
         }
+        unimplemented!("Attempt to parse primary expression with no tokens left in the buffer.")
+    }
+
+    fn consume<T: Into<TokenKind>>(&mut self, kind: T, msg: &str) -> LoxResult<()> {
+        let kind: TokenKind = kind.into();
+        if self.next_if_check(&kind) {
+            dbg!(self.peek());
+            return Ok(());
+        }
+        Err(ParseError::new(self.previous().unwrap().to_owned(), msg).into())
     }
 }
