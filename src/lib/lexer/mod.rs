@@ -15,16 +15,14 @@ pub(crate) trait Tokenizer {
 
 pub struct Lexer<'a> {
     src: String,
-    filename: String,
     buffer: Cursor<'a>,
     start: Position,
     tokens: Vec<Token>,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(filename: String, src: &'a str) -> Self {
+    pub fn new(src: &'a str) -> Self {
         Lexer {
-            filename,
             src: src.to_string(),
             start: Position::new(1, 1),
             buffer: Cursor::new(src.chars().peekable()),
@@ -72,7 +70,6 @@ impl<'a> Lexer<'a> {
                 _ => {
                     return Err(ScanError::error(
                         "unterminated string",
-                        &self.filename,
                         self.get_line_content(self.start.line_number()),
                         Span::new(self.start, self.buffer.pos()),
                     )
@@ -93,7 +90,6 @@ impl<'a> Lexer<'a> {
             .or_else(|e| {
                 Err(ScanError::error(
                     e.to_string(),
-                    self.filename.as_str().to_string(),
                     self.get_line_content(self.buffer.pos().line_number()),
                     Span::new(self.start, self.buffer.pos()),
                 ))
@@ -157,7 +153,6 @@ impl<'a> Lexer<'a> {
                 err => {
                     return Err(ScanError::error(
                         format!("unexpected character `{}`", err),
-                        (&*self.filename).to_string(),
                         self.get_line_content(self.start.line_number()),
                         self.buffer.pos().into(),
                     )

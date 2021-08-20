@@ -8,6 +8,8 @@ pub(crate) mod position;
 pub(crate) use lexer::token;
 use lexer::Lexer;
 
+use self::parser::Parser;
+
 pub struct Lox;
 
 impl Lox {
@@ -37,12 +39,14 @@ impl Lox {
     }
 
     fn run<T: AsRef<str>>(src: String, src_filename: T) -> LoxResult<()> {
-        let lexer = Lexer::new(src_filename.as_ref().to_string(), &src);
+        std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
+        let lexer = Lexer::new(&src);
         let tokens = lexer.scan_tokens()?;
 
-        for token in tokens {
-            println!("{}", token);
-        }
+        let parser = Parser::new(tokens);
+        let expr = parser.parse()?;
+        println!("{}", expr);
+
         Ok(())
     }
 }
