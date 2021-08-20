@@ -19,6 +19,10 @@ impl Token {
     pub(crate) fn kind(&self) -> &TokenKind {
         &self.kind
     }
+
+    pub(crate) fn span(&self) -> &Span {
+        &self.span
+    }
 }
 
 impl std::fmt::Display for Token {
@@ -27,7 +31,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TokenKind {
     Keyword(Keyword),
     Punctuator(Punctuator),
@@ -234,7 +238,9 @@ impl FromStr for Numeric {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.contains('.') {
             if s.ends_with('.') {
-                return Err(LoxError::Parse("unterminated numeric literal".to_string()));
+                return Err(LoxError::Generic(
+                    "unterminated numeric literal".to_string(),
+                ));
             }
             Ok(Self::Decimal(s.parse()?))
         } else {
