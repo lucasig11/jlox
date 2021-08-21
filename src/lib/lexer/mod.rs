@@ -87,12 +87,12 @@ impl<'a> Lexer<'a> {
             .buffer
             .take_char_while(start, |c| c.is_ascii_digit() || c == '.')?
             .parse::<Numeric>()
-            .or_else(|e| {
-                Err(ScanError::error(
+            .map_err(|e| {
+                ScanError::error(
                     e.to_string(),
                     self.get_line_content(self.buffer.pos().line_number()),
                     Span::new(self.start, self.buffer.pos()),
-                ))
+                )
             })?;
         self.add_token(TokenKind::numeric_literal(buf));
         Ok(())

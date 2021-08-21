@@ -137,7 +137,7 @@ fn pad(n: usize, ch: char) -> String {
 /// 1 |   ok$(err);
 ///   |     ^
 /// ```
-fn fmt_line_error(span: Span, text: &String) -> String {
+fn fmt_line_error(span: Span, text: &str) -> String {
     let sep = "|".blue();
     let (start, end) = (span.start(), span.end());
     let here = format!(

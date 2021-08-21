@@ -43,7 +43,7 @@ impl Lox {
         let lexer = Lexer::new(&src);
         let tokens = lexer.scan_tokens()?;
 
-        let parser = Parser::new(tokens);
+        let parser = Parser::new(&tokens);
         let expr = parser.parse()?;
         println!("{}", expr);
 
