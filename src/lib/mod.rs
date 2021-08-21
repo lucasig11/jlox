@@ -1,6 +1,7 @@
 use crate::error::LoxResult;
 use std::{io::Write, path::PathBuf};
 
+mod interpreter;
 mod lexer;
 pub(crate) mod parser;
 pub(crate) mod position;
@@ -45,7 +46,8 @@ impl Lox {
 
         let parser = Parser::new(&tokens);
         let expr = parser.parse()?;
-        println!("{}", expr);
+        interpreter::Interpreter::interpret(expr)?;
+        //println!("{}", expr);
 
         Ok(())
     }
