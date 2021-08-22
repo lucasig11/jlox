@@ -150,7 +150,6 @@ impl Sub for LoxValue {
     type Output = LoxResult<Self>;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        // make sure both values are numerical values
         check_or!(LoxValue::is_num, &self, &rhs; "operands must be numbers");
 
         binop!(self, rhs, -)
@@ -161,9 +160,11 @@ impl Div for LoxValue {
     type Output = LoxResult<Self>;
 
     fn div(self, rhs: Self) -> Self::Output {
-        // make sure both values are numerical values
         check_or!(LoxValue::is_num, &self, &rhs; "operands must be numbers");
-
+        let zero = LoxValue::Decimal(0.0);
+        if self.eq(&zero) || rhs.eq(&zero) {
+            return Err(LoxError::Generic("attempt to divide by zero".to_string()));
+        }
         binop!(self, rhs, /)
     }
 }
@@ -172,7 +173,6 @@ impl Mul for LoxValue {
     type Output = LoxResult<Self>;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        // make sure both values are numerical values
         check_or!(LoxValue::is_num, &self, &rhs; "operands must be numbers");
 
         binop!(self, rhs, *)
@@ -183,12 +183,10 @@ impl Add for LoxValue {
     type Output = LoxResult<Self>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        // int + int
         if check!(Self::is_num, &self, &rhs) {
             return binop!(self, rhs, +);
         }
 
-        // concat strings (convert to string if necessary)
         if self.is_string() || rhs.is_string() {
             return Ok(LoxValue::String(format!("{}{}", self, rhs)));
         }
