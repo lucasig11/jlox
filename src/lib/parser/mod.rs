@@ -182,6 +182,7 @@ struct InnerIter<'a, T> {
 }
 
 impl<'a, T> InnerIter<'a, T> {
+    #[inline]
     fn new(collection: &'a [T]) -> Self {
         Self {
             collection,
@@ -189,6 +190,7 @@ impl<'a, T> InnerIter<'a, T> {
         }
     }
 
+    #[inline]
     fn next(&self) -> Option<&T> {
         if *self.current.borrow() < self.collection.len() - 1 {
             *self.current.borrow_mut() += 1;
@@ -196,10 +198,13 @@ impl<'a, T> InnerIter<'a, T> {
         self.previous()
     }
 
+    #[inline]
     fn previous(&self) -> Option<&T> {
-        self.collection.get(*self.current.borrow() - 1)
+        self.collection
+            .get((*self.current.borrow()).checked_sub(1)?)
     }
 
+    #[inline]
     fn peek(&self) -> Option<&T> {
         self.collection.get(*self.current.borrow())
     }
