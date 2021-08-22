@@ -4,6 +4,55 @@ use std::cmp::PartialEq;
 use std::convert::TryFrom;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+macro_rules! check {
+    ($test:expr, $($val:expr),+) => {
+        {
+            let mut check = true;
+            $(
+                if !$test($val) {
+                    check = false;
+                }
+            )+
+            check
+        }
+    };
+}
+
+/// Test each val, if the test returns false, returns an Error.
+macro_rules! check_or {
+    ($test:expr, $($val:expr),+;$msg:literal) => {
+        {
+            $(
+                if !$test($val) {
+                    return Err(LoxError::Generic($msg.to_string()));
+                }
+            )*
+        }
+    };
+}
+
+/// Performs a binary operation between two `[LoxValue]`s, using the given operator.
+macro_rules! binop {
+    ($lhs:expr, $rhs:expr, $op:tt) => {
+        {
+            // if at least one of them is decimal, then we return a decimal
+            if $lhs.is_decimal() || $rhs.is_decimal() {
+                return Ok(LoxValue::Decimal(($lhs.to_dec() $op $rhs.to_dec())));
+            }
+
+            // here we definitely have two integers
+            Ok(LoxValue::Integer(($lhs.to_int() $op $rhs.to_int())))
+        }
+    }
+}
+macro_rules! cmpop {
+    ($lhs:expr, $rhs:expr, $op:tt) => {
+        {
+            Ok(LoxValue::Boolean(($lhs.to_dec() $op $rhs.to_dec())))
+        }
+    }
+}
+
 /// Internal language types
 pub(crate) enum LoxValue {
     String(String),
@@ -22,6 +71,24 @@ impl LoxValue {
             Self::Nil => false,
             _ => true,
         }
+    }
+
+    pub fn ge(&self, oth: &Self) -> LoxResult<LoxValue> {
+        check_or!(LoxValue::is_num, self, oth; "operands must be numbers");
+        cmpop!(self, oth, >=)
+    }
+
+    pub fn gt(&self, oth: &Self) -> LoxResult<LoxValue> {
+        check_or!(LoxValue::is_num, self, oth; "operands must be numbers");
+        cmpop!(self, oth, >)
+    }
+    pub fn le(&self, oth: &Self) -> LoxResult<LoxValue> {
+        check_or!(LoxValue::is_num, self, oth; "operands must be numbers");
+        cmpop!(self, oth, <=)
+    }
+    pub fn lt(&self, oth: &Self) -> LoxResult<LoxValue> {
+        check_or!(LoxValue::is_num, self, oth; "operands must be numbers");
+        cmpop!(self, oth, <)
     }
 
     fn to_int(&self) -> isize {
@@ -78,56 +145,6 @@ impl std::fmt::Display for LoxValue {
         }
     }
 }
-
-macro_rules! check {
-        ($test:expr, $($val:expr),+) => {
-            {
-                let mut check = true;
-                $(
-                    if !$test($val) {
-                        check = false;
-                    }
-                )+
-                check
-            }
-        };
-    }
-
-/// Test each val, if the test returns false, returns an Error.
-/// Otherwise, do nothing
-macro_rules! check_or {
-        ($test:expr, $($val:expr),+;$msg:literal) => {
-            {
-                $(
-                    if !$test($val) {
-                        return Err(LoxError::Generic($msg.to_string()));
-                    }
-                )*
-            }
-        };
-    }
-
-/// Performs a binary operation between two `[LoxValue]`s, using the given operator.
-///
-/// # Example
-///
-/// ```
-/// let n = binop!(LoxValue::Decimal(10.0), LoxValue::Integer(1), -);
-/// assert_eq!(n, Ok(LoxValue::Decimal(9.0)));
-/// ```
-macro_rules! binop {
-        ($lhs:expr, $rhs:expr, $op:tt) => {
-            {
-                // if at least one of them is decimal, then we return a decimal
-                if $lhs.is_decimal() || $rhs.is_decimal() {
-                    return Ok(LoxValue::Decimal(($lhs.to_dec() $op $rhs.to_dec())));
-                }
-
-                // here we definitely have two integers
-                Ok(LoxValue::Integer(($lhs.to_int() $op $rhs.to_int())))
-            }
-        }
-    }
 
 impl Sub for LoxValue {
     type Output = LoxResult<Self>;
