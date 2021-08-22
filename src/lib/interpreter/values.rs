@@ -24,15 +24,15 @@ impl LoxValue {
         }
     }
 
-    fn into_int(self) -> isize {
+    fn to_int(&self) -> isize {
         match self {
-            Self::Decimal(d) => d as isize,
-            Self::Integer(i) => i,
+            Self::Decimal(d) => *d as isize,
+            Self::Integer(i) => *i,
             _ => unreachable!(),
         }
     }
 
-    fn into_dec(&self) -> f64 {
+    fn to_dec(&self) -> f64 {
         match self {
             Self::Decimal(d) => *d,
             Self::Integer(i) => *i as f64,
@@ -120,11 +120,11 @@ macro_rules! binop {
             {
                 // if at least one of them is decimal, then we return a decimal
                 if $lhs.is_decimal() || $rhs.is_decimal() {
-                    return Ok(LoxValue::Decimal(($lhs.into_dec() $op $rhs.into_dec())));
+                    return Ok(LoxValue::Decimal(($lhs.to_dec() $op $rhs.to_dec())));
                 }
 
                 // here we definitely have two integers
-                Ok(LoxValue::Integer(($lhs.into_int() $op $rhs.into_int())))
+                Ok(LoxValue::Integer(($lhs.to_int() $op $rhs.to_int())))
             }
         }
     }
@@ -237,8 +237,8 @@ impl PartialEq for LoxValue {
                     return false;
                 }
 
-                let lhs = self.into_dec();
-                let rhs = oth.into_dec();
+                let lhs = self.to_dec();
+                let rhs = oth.to_dec();
 
                 lhs.eq(&rhs)
             }
