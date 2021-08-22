@@ -1,5 +1,6 @@
 use crate::error::{LoxError, LoxResult};
 use crate::lib::token::{Keyword, Numeric, TokenKind};
+use std::cmp::PartialEq;
 use std::convert::TryFrom;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -31,10 +32,10 @@ impl LoxValue {
         }
     }
 
-    fn into_dec(self) -> f64 {
+    fn into_dec(&self) -> f64 {
         match self {
-            Self::Decimal(d) => d,
-            Self::Integer(i) => i as f64,
+            Self::Decimal(d) => *d,
+            Self::Integer(i) => *i as f64,
             _ => unreachable!(),
         }
     }
@@ -191,6 +192,56 @@ impl Neg for LoxValue {
             _ => Err(LoxError::Generic(
                 "unary operand must be a number".to_string(),
             )),
+        }
+    }
+}
+
+// Returns true if all the values match the pattern
+macro_rules! multi_matches {
+    ($expression:pat, $($val:expr),+) => {
+        {
+            let mut ret = true;
+            $(ret &= matches!($val, $expression);)+
+            ret
+        }
+    }
+}
+
+// Nil, Nil => true
+// String, String => cmp.string,
+// Int, int = cmp.int,
+// bool, bool, => cmp.bool,
+// _ => false
+impl PartialEq for LoxValue {
+    fn eq(&self, oth: &Self) -> bool {
+        if multi_matches!(&LoxValue::Nil, &self, &oth) {
+            return true;
+        }
+
+        match &self {
+            LoxValue::Nil => false,
+            LoxValue::String(s) => {
+                if let LoxValue::String(oth) = oth {
+                    return s.eq(oth);
+                }
+                false
+            }
+            LoxValue::Boolean(b) => {
+                if let LoxValue::Boolean(oth) = oth {
+                    return b.eq(oth);
+                }
+                false
+            }
+            _ => {
+                if !oth.is_num() {
+                    return false;
+                }
+
+                let lhs = self.into_dec();
+                let rhs = oth.into_dec();
+
+                lhs.eq(&rhs)
+            }
         }
     }
 }

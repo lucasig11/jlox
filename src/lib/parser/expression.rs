@@ -55,7 +55,7 @@ impl Expr {
                         Ok((-rhs).map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()))?)
                     }
                     TokenKind::Punctuator(Not) => Ok(LoxValue::Boolean(!rhs.is_truthy())),
-                    _ => unreachable!("[BUG] created a unary expression with invalid operators"),
+                    _ => unreachable!("[BUG] tried to evaluate an invalid unary expression"),
                 }
             }
 
@@ -68,7 +68,13 @@ impl Expr {
                     TokenKind::Punctuator(Mul) => lhs * rhs,
                     TokenKind::Punctuator(Div) => lhs / rhs,
                     TokenKind::Punctuator(Add) => lhs + rhs,
-                    _ => unimplemented!(),
+                    // TokenKind::Punctuator(GreaterThan) => lhs > rhs,
+                    // TokenKind::Punctuator(GreaterThanOrEq) => lhs >= rhs,
+                    // TokenKind::Punctuator(LessThan) => lhs < rhs,
+                    // TokenKind::Punctuator(LessThanOrEq) => lhs <= rhs,
+                    TokenKind::Punctuator(Eq) => Ok(LoxValue::Boolean(lhs == rhs)),
+                    TokenKind::Punctuator(NotEq) => Ok(LoxValue::Boolean(lhs != rhs)),
+                    _ => unreachable!("[BUG] tried to evaluate an invalid binary expression"),
                 };
                 result.map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()).into())
             }
