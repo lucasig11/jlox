@@ -12,10 +12,12 @@ struct Options {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Options::from_args();
-    match opt.file {
-        Some(path) => lib::Lox::do_file(path)?,
-        None => lib::Lox::do_repl()?,
-    };
+    if let Err(e) = match opt.file {
+        Some(path) => lib::Lox::do_file(path),
+        None => lib::Lox::do_repl(),
+    } {
+        println!("{}", e);
+    }
 
     Ok(())
 }

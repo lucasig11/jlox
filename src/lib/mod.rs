@@ -9,7 +9,8 @@ pub(crate) mod position;
 pub(crate) use lexer::token;
 use lexer::Lexer;
 
-use self::parser::Parser;
+use interpreter::Interpreter;
+use parser::Parser;
 
 pub struct Lox;
 
@@ -21,10 +22,11 @@ impl Lox {
             path.to_str().ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
-                    "Source-file name contains illegal UTF-8 characters",
+                    "filename contains illegal UTF-8 characters",
                 )
             })?,
-        )
+        );
+        Ok(())
     }
 
     pub(crate) fn do_repl() -> LoxResult<()> {
@@ -33,30 +35,24 @@ impl Lox {
             let mut buf = String::new();
             std::io::stdout().flush()?;
             std::io::stdin().read_line(&mut buf)?;
-            if let Err(e) = Self::run(&buf, "STDIN") {
-                let e = InterpreterError::from(e, &buf);
-                println!("{}", e);
-            }
+            Self::run(&buf, "stdin");
         }
     }
 
-    fn run<T: AsRef<str>>(src: &str, src_filename: T) -> LoxResult<()> {
+    fn run<T: AsRef<str>>(src: &str, src_filename: T) {
         if src.trim().len().eq(&0) {
-            return Ok(());
+            return;
         }
         std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
-        let lexer = Lexer::new(src);
-        if let Err(e) = {
-            let tokens = lexer.scan_tokens()?;
-            let parser = Parser::new(&tokens);
-            let expr = parser.parse()?;
-            interpreter::Interpreter::interpret(expr)?;
-            Ok(())
-        } {
+        let run = |src| {
+            let tokens = Lexer::new(src).scan_tokens()?;
+            let expr = Parser::new(&tokens).parse()?;
+            Interpreter::interpret(expr)
+        };
+
+        if let Err(e) = run(&src) {
             let e = InterpreterError::from(e, src);
             println!("{}", e);
         }
-
-        Ok(())
     }
 }
