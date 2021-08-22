@@ -43,17 +43,19 @@ impl Expr {
             Expr::Literal(tk) => tk
                 .kind()
                 .try_into()
-                .map_err(|e: &str| LoxError::Generic(e.to_string())),
+                .map_err(|e: &str| InnerError::new(*pos, e).into()),
             Expr::Grouping(expr) => (*expr).evaluate(),
             Expr::Unary(op, rhs) => {
-                let rhs = (*rhs).evaluate()?;
+                let rhs = rhs.evaluate()?;
 
                 use Punctuator::*;
 
                 match *op.kind() {
-                    TokenKind::Punctuator(Sub) => Ok(-rhs),
+                    TokenKind::Punctuator(Sub) => {
+                        Ok((-rhs).map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()))?)
+                    }
                     TokenKind::Punctuator(Not) => Ok(LoxValue::Boolean(!rhs.is_truthy())),
-                    _ => unreachable!(),
+                    _ => unreachable!("[BUG] created a unary expression with invalid operators"),
                 }
             }
 
@@ -66,7 +68,7 @@ impl Expr {
                     TokenKind::Punctuator(Mul) => lhs * rhs,
                     TokenKind::Punctuator(Div) => lhs / rhs,
                     TokenKind::Punctuator(Add) => lhs + rhs,
-                    _ => unreachable!(),
+                    _ => unimplemented!(),
                 };
                 result.map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()).into())
             }

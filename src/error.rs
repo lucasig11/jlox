@@ -80,8 +80,8 @@ pub(crate) enum LoxError {
     Inner(InnerError),
     /// Errors thrown by any I/O function
     Io(std::io::Error),
-    /// Errors that don't have any special handling and are just going
-    /// to be passed back to it's caller
+    /// Errors that don't have any special way of handling and are just intended
+    /// to be passed back to it's caller as an error message.
     Generic(String),
     /// Errors thrown when parsing a string to an integer
     ParseInt(std::num::ParseIntError),
@@ -95,10 +95,10 @@ impl std::fmt::Display for LoxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LoxError::Inner(e) => write!(f, "{}", e),
-            LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::ParseInt(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::ParseFloat(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::Generic(e) => write!(f, "{}", e),
+            LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::ParseInt(e) => write!(f, "{}", e),
+            LoxError::ParseFloat(e) => write!(f, "{}", e),
         }
     }
 }
