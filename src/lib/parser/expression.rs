@@ -78,11 +78,23 @@ impl Expr {
 
     pub fn position(&self) -> Span {
         match &self {
+            Expr::This(tk) => *tk.span(),
             Expr::Literal(tk) => *tk.span(),
+            Expr::Variable(tk) => *tk.span(),
             Expr::Grouping(expr) => expr.position(),
+            Expr::Get(expr, tk) => Span::new(expr.position().start(), tk.span().end()),
             Expr::Unary(op, expr) => Span::new(op.span().start(), expr.position().end()),
+            Expr::Super(ltk, rtk) => Span::new(ltk.span().start(), rtk.span().end()),
+            Expr::Assign(tk, expr) => Span::new(tk.span().start(), expr.position().end()),
             Expr::Binary(lhs, _, rhs) => Span::new(lhs.position().start(), rhs.position().end()),
-            _ => todo!(),
+            Expr::Logical(lhs, _, rhs) => Span::new(lhs.position().start(), rhs.position().end()),
+            Expr::Set(lhs, _, rhs) => Span::new(lhs.position().start(), rhs.position().end()),
+            Expr::Call(expr, tk, args) => {
+                if let Some(arg) = args.last() {
+                    return Span::new(expr.position().start(), arg.position().end());
+                }
+                Span::new(expr.position().start(), tk.span().end())
+            }
         }
     }
 }
