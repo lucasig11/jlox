@@ -1,6 +1,9 @@
+#![feature(box_syntax)]
+use crate::lib::position::Span;
 use crate::lib::token::Token;
 
 #[allow(dead_code)]
+#[derive(Debug)]
 /// Language expressions
 pub(crate) enum Expr {
     /// Binary expression (Expr, Operator, Expr)
@@ -58,14 +61,25 @@ impl Expr {
                 let lhs = lhs.evaluate()?;
                 let rhs = rhs.evaluate()?;
                 use Punctuator::*;
-                match op.kind() {
-                    &TokenKind::Punctuator(Sub) => Ok((lhs - rhs)?),
-                    &TokenKind::Punctuator(Mul) => Ok((lhs * rhs)?),
-                    &TokenKind::Punctuator(Div) => Ok((lhs / rhs)?),
-                    &TokenKind::Punctuator(Add) => Ok((lhs + rhs)?),
+                let result = match op.kind() {
+                    &TokenKind::Punctuator(Sub) => lhs - rhs,
+                    &TokenKind::Punctuator(Mul) => lhs * rhs,
+                    &TokenKind::Punctuator(Div) => lhs / rhs,
+                    &TokenKind::Punctuator(Add) => lhs + rhs,
                     _ => unreachable!(),
-                }
+                };
+                result.map_err(|e: LoxError| RuntimeError::new(*op.span(), &e.to_string()).into())
             }
+            _ => todo!(),
+        }
+    }
+
+    pub fn position(&self) -> Span {
+        match &self {
+            Expr::Literal(tk) => *tk.span(),
+            Expr::Grouping(expr) => expr.position(),
+            Expr::Unary(op, expr) => Span::new(op.span().start(), expr.position().end()),
+            Expr::Binary(lhs, _, rhs) => Span::new(lhs.position().start(), rhs.position().end()),
             _ => todo!(),
         }
     }

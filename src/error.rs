@@ -5,6 +5,45 @@ use std::fmt;
 use crate::lib::position::Span;
 pub(crate) type LoxResult<T> = Result<T, LoxError>;
 
+/// Error that wraps the inner errors
+/// in order to be able to print the line
+/// at which the error was generated
+pub(crate) struct InterpreterError<'a> {
+    err: LoxError,
+    src_file: Vec<&'a str>,
+}
+
+impl<'a> InterpreterError<'a> {
+    pub fn from(err: LoxError, src_file: &'a str) -> Self {
+        Self {
+            err,
+            src_file: src_file.lines().collect(),
+        }
+    }
+}
+
+impl<'a> fmt::Display for InterpreterError<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use LoxError::*;
+        let mut display = |pos: Span, e: String| {
+            let line = fmt_line_error(
+                pos,
+                &self
+                    .src_file
+                    .get(pos.start().line_number() as usize - 1)
+                    .unwrap(),
+            );
+            write!(f, "{} {}\n{}", ErrorLevel::Error, e, line)
+        };
+        match &self.err {
+            Scan(e) => display(e.pos, e.to_string()),
+            Parse(e) => display(e.pos, e.to_string()),
+            Runtime(e) => display(e.pos, e.to_string()),
+            e => write!(f, "{}", e),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ErrorLevel {
     Error,
@@ -14,7 +53,6 @@ impl fmt::Display for ErrorLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             ErrorLevel::Error => write!(f, "{}:", "error".red().bold()),
-            // ErrorLevel::Warning => write!(f, "{}:", "warning".yellow().bold()),
         }
     }
 }
@@ -26,6 +64,8 @@ pub(crate) enum LoxError {
     Scan(ScanError),
     /// Errors thrown during the parsing
     Parse(ParseError),
+    /// Errors thrown during the evaluation of expressions
+    Runtime(RuntimeError),
     /// Errors thrown by any I/O function
     Io(std::io::Error),
     /// Errors that still don't have any special handling
@@ -43,10 +83,11 @@ impl std::fmt::Display for LoxError {
         match self {
             LoxError::Scan(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::Parse(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::Runtime(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseInt(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseFloat(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::Generic(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::Generic(e) => write!(f, "{}", e),
         }
     }
 }
@@ -57,6 +98,11 @@ impl From<std::io::Error> for LoxError {
     }
 }
 
+impl From<RuntimeError> for LoxError {
+    fn from(err: RuntimeError) -> Self {
+        Self::Runtime(err)
+    }
+}
 impl From<ParseError> for LoxError {
     fn from(err: ParseError) -> Self {
         Self::Parse(err)
@@ -81,15 +127,36 @@ impl From<std::num::ParseFloatError> for LoxError {
 }
 
 #[derive(Debug)]
+pub(crate) struct RuntimeError {
+    pos: Span,
+    message: String,
+}
+
+impl RuntimeError {
+    pub fn new(pos: Span, msg: &str) -> Self {
+        Self {
+            pos,
+            message: msg.to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct ParseError {
-    tk: Token,
+    pos: Span,
     message: String,
 }
 
 impl ParseError {
     pub fn new(tk: Token, msg: &str) -> Self {
         Self {
-            tk,
+            pos: *tk.span(),
             message: msg.to_string(),
         }
     }
@@ -97,23 +164,20 @@ impl ParseError {
 
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let line = fmt_line_error(*self.tk.span(), &self.tk.kind().to_string());
-        write!(f, "{}\n{}", self.message, line)
+        write!(f, "{}", self.message)
     }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct ScanError {
     pos: Span,
-    src_line: String,
     message: String,
 }
 
 impl ScanError {
-    pub fn error<T: Into<String>>(message: T, src_line: String, pos: Span) -> Self {
+    pub fn new<T: Into<String>>(message: T, src_line: String, pos: Span) -> Self {
         Self {
             pos,
-            src_line,
             message: message.into(),
         }
     }
@@ -121,8 +185,7 @@ impl ScanError {
 
 impl fmt::Display for ScanError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let line = fmt_line_error(self.pos, &self.src_line);
-        write!(f, "{}\n{}", self.message, line)
+        write!(f, "{}", self.message)
     }
 }
 

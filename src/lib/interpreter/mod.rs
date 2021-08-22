@@ -165,10 +165,12 @@ pub mod values {
         type Output = LoxResult<Self>;
 
         fn add(self, rhs: Self) -> Self::Output {
+            // int + int
             if check!(Self::is_num, &self, &rhs) {
-                return binop!(self, rhs, +, "attempt to add invalid integer");
+                return binop!(self, rhs, +, "this error should be unreachable. this is a bug.");
             }
 
+            // concat strings (convert to string if necessary)
             if self.is_string() || rhs.is_string() {
                 return Ok(LoxValue::String(format!("{}{}", self, rhs)));
             }

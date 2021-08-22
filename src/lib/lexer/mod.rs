@@ -68,7 +68,7 @@ impl<'a> Lexer<'a> {
                     buf.push(c);
                 }
                 _ => {
-                    return Err(ScanError::error(
+                    return Err(ScanError::new(
                         "unterminated string",
                         self.get_line_content(self.start.line_number()),
                         Span::new(self.start, self.buffer.pos()),
@@ -88,7 +88,7 @@ impl<'a> Lexer<'a> {
             .take_char_while(start, |c| c.is_ascii_digit() || c == '.')?
             .parse::<Numeric>()
             .map_err(|e| {
-                ScanError::error(
+                ScanError::new(
                     e.to_string(),
                     self.get_line_content(self.buffer.pos().line_number()),
                     Span::new(self.start, self.buffer.pos()),
@@ -151,7 +151,7 @@ impl<'a> Lexer<'a> {
                 _ if ch.is_digit(10) => self.lex_numeric(ch)?,
                 _ if ch.is_ascii_alphabetic() || ch.eq(&'_') => self.lex_identifier(ch)?,
                 err => {
-                    return Err(ScanError::error(
+                    return Err(ScanError::new(
                         format!("unexpected character `{}`", err),
                         self.get_line_content(self.start.line_number()),
                         self.buffer.pos().into(),

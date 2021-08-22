@@ -1,4 +1,4 @@
-use crate::error::LoxResult;
+use crate::error::{InterpreterError, LoxResult};
 use std::{io::Write, path::PathBuf};
 
 mod interpreter;
@@ -17,7 +17,7 @@ impl Lox {
     pub(crate) fn do_file(path: PathBuf) -> LoxResult<()> {
         let src = std::fs::read_to_string(&path)?;
         Self::run(
-            src,
+            &src,
             path.to_str().ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
@@ -33,21 +33,26 @@ impl Lox {
             std::io::stdout().flush()?;
             let mut buf = String::new();
             std::io::stdin().read_line(&mut buf)?;
-            if let Err(e) = Self::run(buf, "STDIN") {
+            if let Err(e) = Self::run(&buf, "STDIN") {
+                let e = InterpreterError::from(e, &buf);
                 println!("{}", e);
             }
         }
     }
 
-    fn run<T: AsRef<str>>(src: String, src_filename: T) -> LoxResult<()> {
+    fn run<T: AsRef<str>>(src: &str, src_filename: T) -> LoxResult<()> {
         std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
         let lexer = Lexer::new(&src);
-        let tokens = lexer.scan_tokens()?;
-
-        let parser = Parser::new(&tokens);
-        let expr = parser.parse()?;
-        interpreter::Interpreter::interpret(expr)?;
-        //println!("{}", expr);
+        if let Err(e) = {
+            let tokens = lexer.scan_tokens()?;
+            let parser = Parser::new(&tokens);
+            let expr = parser.parse()?;
+            interpreter::Interpreter::interpret(expr)?;
+            Ok(())
+        } {
+            let e = InterpreterError::from(e, &src);
+            println!("{}", e);
+        }
 
         Ok(())
     }
