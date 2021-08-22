@@ -139,7 +139,11 @@ impl<'a> Parser<'a> {
             }
             return exp;
         }
-        unimplemented!("Attempt to parse primary expression with no tokens left in the buffer.")
+        Err(InnerError::new(
+            *self.inner.previous().unwrap().span(),
+            "expected expression",
+        )
+        .into())
     }
 
     /// Consumes the next token if its kind is `T`. If not, return a `ParseError` with `msg`
@@ -192,7 +196,7 @@ impl<'a, T> InnerIter<'a, T> {
 
     #[inline]
     fn next(&self) -> Option<&T> {
-        if *self.current.borrow() < self.collection.len() - 1 {
+        if *self.current.borrow() < self.collection.len() {
             *self.current.borrow_mut() += 1;
         }
         self.previous()

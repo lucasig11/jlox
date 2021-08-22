@@ -30,8 +30,8 @@ impl Lox {
     pub(crate) fn do_repl() -> LoxResult<()> {
         loop {
             print!("> ");
-            std::io::stdout().flush()?;
             let mut buf = String::new();
+            std::io::stdout().flush()?;
             std::io::stdin().read_line(&mut buf)?;
             if let Err(e) = Self::run(&buf, "STDIN") {
                 let e = InterpreterError::from(e, &buf);
@@ -41,6 +41,9 @@ impl Lox {
     }
 
     fn run<T: AsRef<str>>(src: &str, src_filename: T) -> LoxResult<()> {
+        if src.trim().len().eq(&0) {
+            return Ok(());
+        }
         std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
         let lexer = Lexer::new(src);
         if let Err(e) = {
