@@ -50,7 +50,7 @@ impl Lox {
             Interpreter::interpret(expr)
         };
 
-        if let Err(e) = run(&src) {
+        if let Err(e) = run(src) {
             let e = InterpreterError::from(e, src);
             println!("{}", e);
         }
