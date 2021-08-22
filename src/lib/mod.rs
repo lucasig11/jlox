@@ -42,7 +42,7 @@ impl Lox {
 
     fn run<T: AsRef<str>>(src: &str, src_filename: T) -> LoxResult<()> {
         std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
-        let lexer = Lexer::new(&src);
+        let lexer = Lexer::new(src);
         if let Err(e) = {
             let tokens = lexer.scan_tokens()?;
             let parser = Parser::new(&tokens);
@@ -50,7 +50,7 @@ impl Lox {
             interpreter::Interpreter::interpret(expr)?;
             Ok(())
         } {
-            let e = InterpreterError::from(e, &src);
+            let e = InterpreterError::from(e, src);
             println!("{}", e);
         }
 

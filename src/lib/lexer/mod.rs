@@ -1,6 +1,6 @@
 pub(crate) mod token;
 
-use crate::error::ScanError;
+use crate::error::InnerError;
 use crate::lib::{
     position::{Cursor, Position, Span},
     LoxResult,
@@ -14,7 +14,6 @@ pub(crate) trait Tokenizer {
 }
 
 pub struct Lexer<'a> {
-    src: String,
     buffer: Cursor<'a>,
     start: Position,
     tokens: Vec<Token>,
@@ -23,7 +22,6 @@ pub struct Lexer<'a> {
 impl<'a> Lexer<'a> {
     pub fn new(src: &'a str) -> Self {
         Lexer {
-            src: src.to_string(),
             start: Position::new(1, 1),
             buffer: Cursor::new(src.chars().peekable()),
             tokens: Default::default(),
@@ -47,15 +45,6 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn get_line_content(&self, line: u32) -> String {
-        self.src
-            .lines()
-            .collect::<Vec<&str>>()
-            .get(line as usize - 1)
-            .unwrap()
-            .to_string()
-    }
-
     fn lex_string(&mut self) -> LoxResult<()> {
         let mut buf = String::new();
         loop {
@@ -68,10 +57,9 @@ impl<'a> Lexer<'a> {
                     buf.push(c);
                 }
                 _ => {
-                    return Err(ScanError::new(
-                        "unterminated string",
-                        self.get_line_content(self.start.line_number()),
+                    return Err(InnerError::new(
                         Span::new(self.start, self.buffer.pos()),
+                        "unterminated string",
                     )
                     .into())
                 }
@@ -88,11 +76,7 @@ impl<'a> Lexer<'a> {
             .take_char_while(start, |c| c.is_ascii_digit() || c == '.')?
             .parse::<Numeric>()
             .map_err(|e| {
-                ScanError::new(
-                    e.to_string(),
-                    self.get_line_content(self.buffer.pos().line_number()),
-                    Span::new(self.start, self.buffer.pos()),
-                )
+                InnerError::new(Span::new(self.start, self.buffer.pos()), &e.to_string())
             })?;
         self.add_token(TokenKind::numeric_literal(buf));
         Ok(())
@@ -151,10 +135,9 @@ impl<'a> Lexer<'a> {
                 _ if ch.is_digit(10) => self.lex_numeric(ch)?,
                 _ if ch.is_ascii_alphabetic() || ch.eq(&'_') => self.lex_identifier(ch)?,
                 err => {
-                    return Err(ScanError::new(
-                        format!("unexpected character `{}`", err),
-                        self.get_line_content(self.start.line_number()),
+                    return Err(InnerError::new(
                         self.buffer.pos().into(),
+                        &format!("unexpected character `{}`", err),
                     )
                     .into())
                 }

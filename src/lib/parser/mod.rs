@@ -1,7 +1,7 @@
 pub(crate) mod expression;
 use self::expression::Expr;
 use super::token::{Keyword, Punctuator, Token, TokenKind};
-use crate::error::{LoxResult, ParseError};
+use crate::error::{InnerError, LoxResult};
 use Keyword::*;
 
 /// Converts a list of tokens into an _AST_.
@@ -131,7 +131,7 @@ impl<'a> Parser<'a> {
                     self.consume(Punctuator::CloseParen, "expected ')' after expression")?;
                     Ok(Expr::Grouping(expr.into()))
                 }
-                _ => Err(ParseError::new(tk.to_owned(), "expected expression").into()),
+                _ => Err(InnerError::new(*tk.to_owned().span(), "expected expression").into()),
             };
 
             if exp.is_ok() {
@@ -149,7 +149,7 @@ impl<'a> Parser<'a> {
             self.inner.peek();
             return Ok(());
         }
-        Err(ParseError::new(self.inner.previous().unwrap().to_owned(), msg).into())
+        Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into())
     }
 
     /// Parse left associative tokens

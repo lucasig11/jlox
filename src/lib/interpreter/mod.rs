@@ -26,7 +26,7 @@ pub mod values {
             }
         }
 
-        pub fn as_int(self) -> isize {
+        pub fn into_int(self) -> isize {
             match self {
                 Self::Decimal(d) => d as isize,
                 Self::Integer(i) => i,
@@ -34,7 +34,7 @@ pub mod values {
             }
         }
 
-        pub fn as_dec(self) -> f64 {
+        pub fn into_dec(self) -> f64 {
             match self {
                 Self::Decimal(d) => d,
                 Self::Integer(i) => i as f64,
@@ -128,11 +128,11 @@ pub mod values {
 
                 // if at least one of them is decimal, then we return a decimal
                 if $lhs.is_decimal() || $rhs.is_decimal() {
-                    return Ok(LoxValue::Decimal(($lhs.as_dec() $op $rhs.as_dec())));
+                    return Ok(LoxValue::Decimal(($lhs.into_dec() $op $rhs.into_dec())));
                 }
 
                 // here we definitely have two integers
-                Ok(LoxValue::Integer(($lhs.as_int() $op $rhs.as_int())))
+                Ok(LoxValue::Integer(($lhs.into_int() $op $rhs.into_int())))
             }
         }
     }

@@ -1,4 +1,3 @@
-use crate::Token;
 use colored::Colorize;
 use std::fmt;
 
@@ -25,20 +24,16 @@ impl<'a> InterpreterError<'a> {
 impl<'a> fmt::Display for InterpreterError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use LoxError::*;
-        let mut display = |pos: Span, e: String| {
-            let line = fmt_line_error(
-                pos,
-                &self
-                    .src_file
-                    .get(pos.start().line_number() as usize - 1)
-                    .unwrap(),
-            );
-            write!(f, "{} {}\n{}", ErrorLevel::Error, e, line)
-        };
         match &self.err {
-            Scan(e) => display(e.pos, e.to_string()),
-            Parse(e) => display(e.pos, e.to_string()),
-            Runtime(e) => display(e.pos, e.to_string()),
+            Inner(e) => {
+                let line = fmt_line_error(
+                    e.pos,
+                    self.src_file
+                        .get(e.pos.start().line_number() as usize - 1)
+                        .unwrap(),
+                );
+                write!(f, "{} {}\n{}", ErrorLevel::Error, e, line)
+            }
             e => write!(f, "{}", e),
         }
     }
@@ -57,18 +52,36 @@ impl fmt::Display for ErrorLevel {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct InnerError {
+    pos: Span,
+    message: String,
+}
+
+impl InnerError {
+    pub fn new(pos: Span, msg: &str) -> Self {
+        Self {
+            pos,
+            message: msg.to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for InnerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
 /// Error wrapper for irrecoverable errors
 #[derive(Debug)]
 pub(crate) enum LoxError {
-    /// Errors thrown during the lexical analysis
-    Scan(ScanError),
-    /// Errors thrown during the parsing
-    Parse(ParseError),
-    /// Errors thrown during the evaluation of expressions
-    Runtime(RuntimeError),
+    /// Inner interpreter errors (lexing, parsing and evaluating stages)
+    Inner(InnerError),
     /// Errors thrown by any I/O function
     Io(std::io::Error),
-    /// Errors that still don't have any special handling
+    /// Errors that don't have any special handling and are just going
+    /// to be passed back to it's caller
     Generic(String),
     /// Errors thrown when parsing a string to an integer
     ParseInt(std::num::ParseIntError),
@@ -81,14 +94,18 @@ impl std::error::Error for LoxError {}
 impl std::fmt::Display for LoxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LoxError::Scan(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::Parse(e) => write!(f, "{} {}", ErrorLevel::Error, e),
-            LoxError::Runtime(e) => write!(f, "{} {}", ErrorLevel::Error, e),
+            LoxError::Inner(e) => write!(f, "{}", e),
             LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseInt(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseFloat(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::Generic(e) => write!(f, "{}", e),
         }
+    }
+}
+
+impl From<InnerError> for LoxError {
+    fn from(err: InnerError) -> Self {
+        Self::Inner(err)
     }
 }
 
@@ -98,22 +115,6 @@ impl From<std::io::Error> for LoxError {
     }
 }
 
-impl From<RuntimeError> for LoxError {
-    fn from(err: RuntimeError) -> Self {
-        Self::Runtime(err)
-    }
-}
-impl From<ParseError> for LoxError {
-    fn from(err: ParseError) -> Self {
-        Self::Parse(err)
-    }
-}
-
-impl From<ScanError> for LoxError {
-    fn from(err: ScanError) -> Self {
-        Self::Scan(err)
-    }
-}
 impl From<std::num::ParseIntError> for LoxError {
     fn from(err: std::num::ParseIntError) -> Self {
         Self::ParseInt(err)
@@ -123,69 +124,6 @@ impl From<std::num::ParseIntError> for LoxError {
 impl From<std::num::ParseFloatError> for LoxError {
     fn from(err: std::num::ParseFloatError) -> Self {
         Self::ParseFloat(err)
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct RuntimeError {
-    pos: Span,
-    message: String,
-}
-
-impl RuntimeError {
-    pub fn new(pos: Span, msg: &str) -> Self {
-        Self {
-            pos,
-            message: msg.to_string(),
-        }
-    }
-}
-
-impl std::fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct ParseError {
-    pos: Span,
-    message: String,
-}
-
-impl ParseError {
-    pub fn new(tk: Token, msg: &str) -> Self {
-        Self {
-            pos: *tk.span(),
-            message: msg.to_string(),
-        }
-    }
-}
-
-impl std::fmt::Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct ScanError {
-    pos: Span,
-    message: String,
-}
-
-impl ScanError {
-    pub fn new<T: Into<String>>(message: T, src_line: String, pos: Span) -> Self {
-        Self {
-            pos,
-            message: message.into(),
-        }
-    }
-}
-
-impl fmt::Display for ScanError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message)
     }
 }
 

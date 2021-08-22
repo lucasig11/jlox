@@ -4,8 +4,6 @@ use structopt::StructOpt;
 pub(crate) mod error;
 mod lib;
 
-use lib::token::Token;
-
 #[derive(StructOpt)]
 struct Options {
     #[structopt(parse(from_os_str), help = "Script file to be interpreted (*.lox)")]

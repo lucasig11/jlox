@@ -1,4 +1,3 @@
-#![feature(box_syntax)]
 use crate::lib::position::Span;
 use crate::lib::token::Token;
 
@@ -39,6 +38,7 @@ use std::convert::TryInto;
 
 impl Expr {
     pub fn evaluate(self) -> LoxResult<LoxValue> {
+        let pos = &self.position();
         match self {
             Expr::Literal(tk) => tk
                 .kind()
@@ -50,9 +50,9 @@ impl Expr {
 
                 use Punctuator::*;
 
-                match op.kind() {
-                    &TokenKind::Punctuator(Sub) => Ok(-rhs),
-                    &TokenKind::Punctuator(Not) => Ok(LoxValue::Boolean(!rhs.is_truthy())),
+                match *op.kind() {
+                    TokenKind::Punctuator(Sub) => Ok(-rhs),
+                    TokenKind::Punctuator(Not) => Ok(LoxValue::Boolean(!rhs.is_truthy())),
                     _ => unreachable!(),
                 }
             }
@@ -61,14 +61,14 @@ impl Expr {
                 let lhs = lhs.evaluate()?;
                 let rhs = rhs.evaluate()?;
                 use Punctuator::*;
-                let result = match op.kind() {
-                    &TokenKind::Punctuator(Sub) => lhs - rhs,
-                    &TokenKind::Punctuator(Mul) => lhs * rhs,
-                    &TokenKind::Punctuator(Div) => lhs / rhs,
-                    &TokenKind::Punctuator(Add) => lhs + rhs,
+                let result = match *op.kind() {
+                    TokenKind::Punctuator(Sub) => lhs - rhs,
+                    TokenKind::Punctuator(Mul) => lhs * rhs,
+                    TokenKind::Punctuator(Div) => lhs / rhs,
+                    TokenKind::Punctuator(Add) => lhs + rhs,
                     _ => unreachable!(),
                 };
-                result.map_err(|e: LoxError| RuntimeError::new(*op.span(), &e.to_string()).into())
+                result.map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()).into())
             }
             _ => todo!(),
         }
