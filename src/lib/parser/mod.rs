@@ -127,11 +127,10 @@ impl<'a> Parser<'a> {
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
                     self.inner.next();
                     let expr = self.expression()?;
-                    println!("{}", expr);
                     self.consume(Punctuator::CloseParen, "expected ')' after expression")?;
                     Ok(Expr::Grouping(expr.into()))
                 }
-                _ => Err(InnerError::new(*tk.to_owned().span(), "expected expression").into()),
+                _ => Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
             };
 
             if exp.is_ok() {
