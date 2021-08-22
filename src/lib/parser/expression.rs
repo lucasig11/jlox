@@ -57,7 +57,7 @@ impl Expr {
                     TokenKind::Punctuator(Not) => Ok(LoxValue::Boolean(!rhs.is_truthy())),
                     _ => Err(InnerError::new(
                         *pos,
-                        "[runtime error] attempt to evaluate an invalid unary expression",
+                        "attempt to evaluate an invalid unary expression",
                     )
                     .into()),
                 }
@@ -80,7 +80,7 @@ impl Expr {
                     TokenKind::Punctuator(NotEq) => Ok(LoxValue::Boolean(lhs != rhs)),
                     _ => Err(InnerError::new(
                         *pos,
-                        "[runtime error] attempt to evaluate an invalid binary expression",
+                        "attempt to evaluate an invalid binary expression",
                     )
                     .into()),
                 };
