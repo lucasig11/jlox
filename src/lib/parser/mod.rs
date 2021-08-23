@@ -237,9 +237,29 @@ impl<'a, T> InnerIter<'a, T> {
     #[inline]
     fn next_if(&self, test: bool) -> bool {
         if test {
-            self.next();
+            self.advance();
             return true;
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::lib::lexer::Lexer;
+
+    use super::*;
+
+    #[test]
+    fn parses_nested_expressions() {
+        let src = "(1+(3-2)+4);";
+        let tokens = Lexer::new(src).scan_tokens().unwrap();
+        let expr = Parser::new(&tokens).parse().unwrap();
+        if let Stmt::Expression(expr) = &expr[0] {
+            println!("{}", expr);
+        }
+        assert!(
+            matches!(&expr[0], Stmt::Expression(expr) if &expr.to_string() == "(group (+ (+ 1 (group (- 3 2))) 4))")
+        )
     }
 }
