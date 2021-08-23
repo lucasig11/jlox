@@ -56,13 +56,13 @@ impl<'a> Parser<'a> {
 
     fn print_stmt(&self) -> LoxResult<Stmt> {
         let value = self.expression()?;
-        self.consume(Punctuator::Semicolon, "expected ';' after value")?;
+        self.consume(Punctuator::Semicolon.into(), "expected ';' after value")?;
         Ok(Stmt::Print(value))
     }
 
     fn expression_stmt(&self) -> LoxResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(Punctuator::Semicolon, "expected ';' after value")?;
+        self.consume(Punctuator::Semicolon.into(), "expected ';' after value")?;
         Ok(Stmt::Expression(expr))
     }
 
@@ -146,7 +146,10 @@ impl<'a> Parser<'a> {
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
                     self.inner.advance();
                     let expr = self.expression()?;
-                    self.consume(Punctuator::CloseParen, "expected ')' after expression")?;
+                    self.consume(
+                        Punctuator::CloseParen.into(),
+                        "expected ')' after expression",
+                    )?;
                     return Ok(Expr::Grouping(expr.into()));
                 }
                 _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
@@ -180,9 +183,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Consumes the next token if its kind is `T`. If not, return a [LoxError](crate::error::LoxError::Inner) with `msg`
-    fn consume<T: Into<TokenKind>>(&self, kind: T, msg: &str) -> LoxResult<()> {
-        if self.inner.next_if(self.check(&kind.into())) {
-            return Ok(());
+    fn consume(&self, kind: TokenKind, msg: &str) -> LoxResult<&Token> {
+        if self.check(&kind) {
+            return Ok(self.inner.advance().unwrap());
         }
         Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into())
     }
