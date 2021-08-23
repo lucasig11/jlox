@@ -37,7 +37,7 @@ use crate::lib::token::{Punctuator, TokenKind};
 use std::convert::TryInto;
 
 impl Expr {
-    pub fn evaluate(self) -> LoxResult<LoxValue> {
+    pub fn evaluate(&self) -> LoxResult<LoxValue> {
         let pos = &self.position();
         match self {
             Expr::Literal(tk) => tk

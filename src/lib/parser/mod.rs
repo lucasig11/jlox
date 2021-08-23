@@ -1,7 +1,9 @@
 pub(crate) mod expression;
-use self::expression::Expr;
+pub(crate) mod statements;
 use super::token::{Keyword, Punctuator, Token, TokenKind};
 use crate::error::{InnerError, LoxResult};
+use expression::Expr;
+pub(crate) use statements::Stmt;
 use Keyword::*;
 
 /// Converts a list of tokens into an _AST_.
@@ -26,8 +28,33 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(self) -> LoxResult<Expr> {
-        self.expression()
+    pub fn parse(self) -> LoxResult<Vec<Stmt>> {
+        let mut statements = Vec::new();
+        while self.inner.peek().is_some() {
+            statements.push(self.statement()?);
+        }
+        Ok(statements)
+    }
+
+    fn statement(&self) -> LoxResult<Stmt> {
+        if self.check(&TokenKind::Keyword(Keyword::Print)) {
+            self.inner.next();
+            return self.print_stmt();
+        }
+        self.expression_stmt()
+    }
+
+    fn print_stmt(&self) -> LoxResult<Stmt> {
+        let value = self.expression()?;
+        self.consume(Punctuator::Semicolon, "expected ';' after value")?;
+        self.inner.next();
+        Ok(Stmt::Print(value))
+    }
+
+    fn expression_stmt(&self) -> LoxResult<Stmt> {
+        let expr = self.expression()?;
+        self.consume(Punctuator::Semicolon, "expected ';' after value")?;
+        Ok(Stmt::Expression(expr))
     }
 
     /// Helper function for recovering from errors.
