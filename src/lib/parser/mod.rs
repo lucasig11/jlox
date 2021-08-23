@@ -38,7 +38,7 @@ impl<'a> Parser<'a> {
 
     fn statement(&self) -> LoxResult<Stmt> {
         if self.check(&TokenKind::Keyword(Keyword::Print)) {
-            self.inner.next();
+            self.inner.advance();
             return self.print_stmt();
         }
         self.expression_stmt()
@@ -47,7 +47,6 @@ impl<'a> Parser<'a> {
     fn print_stmt(&self) -> LoxResult<Stmt> {
         let value = self.expression()?;
         self.consume(Punctuator::Semicolon, "expected ';' after value")?;
-        self.inner.next();
         Ok(Stmt::Print(value))
     }
 
@@ -61,7 +60,7 @@ impl<'a> Parser<'a> {
     /// It walks the token buffer until it finds a statement boundary.
     #[allow(dead_code)]
     fn synchronize(&self) {
-        self.inner.next();
+        self.inner.advance();
         while let Some(e) = self.inner.peek() {
             if let Some(t) = self.inner.previous() {
                 if t.kind() == &TokenKind::Punctuator(Punctuator::Semicolon) {
@@ -75,25 +74,8 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            self.inner.next();
+            self.inner.advance();
         }
-    }
-
-    /// Compares a list of tokens to the next token in the buffer,
-    /// if the comparison returns true, walks the list and return true.
-    fn multi_check<T: Into<TokenKind> + Clone>(&self, tks: &[T]) -> bool {
-        for t in tks {
-            let t: TokenKind = t.to_owned().into();
-            if self.inner.next_if(self.check(&t)) {
-                return true;
-            }
-        }
-        false
-    }
-
-    #[inline]
-    fn check(&self, kind: &TokenKind) -> bool {
-        matches!(self.inner.peek(), Some(e) if e.kind() == kind)
     }
 
     #[inline]
@@ -147,23 +129,20 @@ impl<'a> Parser<'a> {
     fn primary(&self) -> LoxResult<Expr> {
         if let Some(tk) = self.inner.peek() {
             let exp = match tk.kind() {
-                TokenKind::BooleanLiteral(_) => Ok(Expr::Literal(tk.to_owned())),
-                TokenKind::StringLiteral(_) => Ok(Expr::Literal(tk.to_owned())),
-                TokenKind::NumericLiteral(_) => Ok(Expr::Literal(tk.to_owned())),
-                TokenKind::Keyword(Keyword::Nil) => Ok(Expr::Literal(tk.to_owned())),
+                TokenKind::BooleanLiteral(_) => Expr::Literal(tk.to_owned()),
+                TokenKind::StringLiteral(_) => Expr::Literal(tk.to_owned()),
+                TokenKind::NumericLiteral(_) => Expr::Literal(tk.to_owned()),
+                TokenKind::Keyword(Keyword::Nil) => Expr::Literal(tk.to_owned()),
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
-                    self.inner.next();
+                    self.inner.advance();
                     let expr = self.expression()?;
                     self.consume(Punctuator::CloseParen, "expected ')' after expression")?;
-                    Ok(Expr::Grouping(expr.into()))
+                    return Ok(Expr::Grouping(expr.into()));
                 }
-                _ => Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
+                _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
             };
-
-            if exp.is_ok() {
-                self.inner.next();
-            }
-            return exp;
+            self.inner.advance();
+            return Ok(exp);
         }
         Err(InnerError::new(
             *self.inner.previous().unwrap().span(),
@@ -172,10 +151,27 @@ impl<'a> Parser<'a> {
         .into())
     }
 
-    /// Consumes the next token if its kind is `T`. If not, return a [`crate::error::LoxError::Inner`] with `msg`
+    /// Checks to see if the current token has any of the give types.
+    /// If so, it consumes the token and return true. [Parsing Expressions - 6.2.1](https://craftinginterpreters.com/parsing-expressions.html)
+    fn multi_check<T: Into<TokenKind> + Clone>(&self, tks: &[T]) -> bool {
+        for t in tks {
+            let t: TokenKind = t.to_owned().into();
+            if self.inner.next_if(self.check(&t)) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Peeks the current token and returns true if its kind is equal to `kind`
+    #[inline]
+    fn check(&self, kind: &TokenKind) -> bool {
+        matches!(self.inner.peek(), Some(e) if e.kind() == kind)
+    }
+
+    /// Consumes the next token if its kind is `T`. If not, return a [LoxError](crate::error::LoxError::Inner) with `msg`
     fn consume<T: Into<TokenKind>>(&self, kind: T, msg: &str) -> LoxResult<()> {
-        let kind: TokenKind = kind.into();
-        if self.check(&kind) {
+        if self.inner.next_if(self.check(&kind.into())) {
             return Ok(());
         }
         Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into())
@@ -220,7 +216,7 @@ impl<'a, T> InnerIter<'a, T> {
     }
 
     #[inline]
-    fn next(&self) -> Option<&T> {
+    fn advance(&self) -> Option<&T> {
         if *self.current.borrow() < self.collection.len() {
             *self.current.borrow_mut() += 1;
         }
