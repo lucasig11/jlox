@@ -46,6 +46,28 @@ impl<'a> Parser<'a> {
         Ok(statements)
     }
 
+    fn declaration(&self) -> LoxResult<Stmt> {
+        if self.inner.next_if(self.check(&Keyword::Let.into())) {
+            return self.var_decl();
+        }
+        self.statement()
+    }
+
+    fn var_decl(&self) -> LoxResult<Stmt> {
+        let name = self.consume_ident("expected variable name")?;
+        let initializer = if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
+            self.expression()?
+        } else {
+            Expr::Literal(Token::new(Keyword::Nil, *self.inner.peek().unwrap().span()))
+        };
+
+        self.consume(
+            Punctuator::Semicolon.into(),
+            "expected ';' after variable declaration",
+        )?;
+        Ok(Stmt::Variable(name.to_owned(), initializer))
+    }
+
     fn statement(&self) -> LoxResult<Stmt> {
         if self.check(&TokenKind::Keyword(Keyword::Print)) {
             self.inner.advance();
@@ -143,6 +165,7 @@ impl<'a> Parser<'a> {
                 TokenKind::StringLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::NumericLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::Nil) => Expr::Literal(tk.to_owned()),
+                TokenKind::Identifier(_) => Expr::Variable(tk.to_owned()),
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
                     self.inner.advance();
                     let expr = self.expression()?;
@@ -188,6 +211,17 @@ impl<'a> Parser<'a> {
             return Ok(self.inner.advance().unwrap());
         }
         Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into())
+    }
+
+    /// Consumes an identifier, or returns and Error
+    fn consume_ident(&self, msg: &str) -> LoxResult<&Token> {
+        if let Some(tk) = self.inner.peek() {
+            match tk.kind() {
+                &TokenKind::Identifier(_) => return Ok(self.inner.advance().unwrap()),
+                _ => {}
+            };
+        };
+        return Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into());
     }
 
     /// Parse left associative tokens

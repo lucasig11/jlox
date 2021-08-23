@@ -32,11 +32,13 @@ impl Stmt {
                 expr.evaluate()?;
             }
             Stmt::Print(expr) => println!("{}", expr.evaluate()?),
+            Stmt::Variable(name, value) => {
+                println!("Declared var {} with value {}", name, value,);
+            }
             Stmt::Return(_, _) => todo!(),
             Stmt::If(_, _, _) => todo!(),
             Stmt::Function(_, _, _) => todo!(),
             Stmt::Class(_, _, _) => todo!(),
-            Stmt::Variable(_, _) => todo!(),
             Stmt::While(_, _) => todo!(),
             Stmt::Block(_) => todo!(),
         };
