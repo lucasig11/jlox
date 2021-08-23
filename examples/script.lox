@@ -1,0 +1,7 @@
+print "Hello, world";
+
+print true == false;
+
+print 1.0 >= 3;
+
+print "20" + 21;
