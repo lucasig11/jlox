@@ -172,7 +172,7 @@ impl<'a> Parser<'a> {
         .into())
     }
 
-    /// Consumes the next token if its kind is `T`. If not, return a `ParseError` with `msg`
+    /// Consumes the next token if its kind is `T`. If not, return a [`crate::error::LoxError::Inner`] with `msg`
     fn consume<T: Into<TokenKind>>(&self, kind: T, msg: &str) -> LoxResult<()> {
         let kind: TokenKind = kind.into();
         if self.check(&kind) {
