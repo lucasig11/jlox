@@ -302,11 +302,20 @@ mod test {
         let src = "(1+(3-2)+4);";
         let tokens = Lexer::new(src).scan_tokens().unwrap();
         let expr = Parser::new(&tokens).parse().unwrap();
-        if let Stmt::Expression(expr) = &expr[0] {
-            println!("{}", expr);
-        }
+        let expected_expression = "(group (+ (+ 1 (group (- 3 2))) 4))";
         assert!(
-            matches!(&expr[0], Stmt::Expression(expr) if &expr.to_string() == "(group (+ (+ 1 (group (- 3 2))) 4))")
+            matches!(&expr[0], Stmt::Expression(expr) if &expr.to_string() == expected_expression)
         )
+    }
+
+    #[test]
+    fn parses_var_declaration() {
+        let src = "let foo = true;";
+        let tokens = Lexer::new(src).scan_tokens().unwrap();
+        let expr = Parser::new(&tokens).parse().unwrap();
+
+        assert!(
+            matches!(&expr[0], Stmt::Variable(tk, expr) if &tk.to_string() == "foo" && &expr.to_string() == "true")
+        );
     }
 }
