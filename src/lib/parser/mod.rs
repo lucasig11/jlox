@@ -1,7 +1,7 @@
 pub(crate) mod expression;
 pub(crate) mod statements;
 use super::token::{Keyword, Punctuator, Token, TokenKind};
-use crate::error::{InnerError, LoxResult};
+use crate::error::{InnerError, LoxError, LoxResult};
 use expression::Expr;
 pub(crate) use statements::Stmt;
 use Keyword::*;
@@ -28,10 +28,20 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(self) -> LoxResult<Vec<Stmt>> {
+    pub fn parse(self) -> Result<Vec<Stmt>, Vec<LoxError>> {
         let mut statements = Vec::new();
+        let mut errors: Vec<LoxError> = Vec::new();
         while self.inner.peek().is_some() {
-            statements.push(self.statement()?);
+            match self.declaration() {
+                Ok(stmt) => statements.push(stmt),
+                Err(e) => {
+                    errors.push(e);
+                    self.synchronize()
+                }
+            }
+        }
+        if errors.len() > 0 {
+            return Err(errors);
         }
         Ok(statements)
     }

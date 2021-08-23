@@ -45,14 +45,16 @@ impl Lox {
         }
         std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
         let run = |src| {
-            let tokens = Lexer::new(src).scan_tokens()?;
+            let tokens = Lexer::new(src).scan_tokens().map_err(|e| vec![e])?;
             let expr = Parser::new(&tokens).parse()?;
             Interpreter::interpret(expr)
         };
 
-        if let Err(e) = run(src) {
-            let e = InterpreterError::from(e, src);
-            println!("{}", e);
+        if let Err(errors) = run(src) {
+            for e in errors {
+                let e = InterpreterError::from(e, src);
+                println!("{}", e);
+            }
         }
     }
 }
