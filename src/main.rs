@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(path) => lib::Lox::do_file(path),
         None => lib::Lox::do_repl(),
     } {
-        println!("{}", e);
+        eprintln!("{}", e);
     }
 
     Ok(())
