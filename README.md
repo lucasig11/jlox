@@ -1,5 +1,9 @@
 
-This is the interpreter for the Lox language, developed in [Robert Nystrom's Crafting Interpreters](https://craftinginterpreters.com/contents.html) book, written in Rust.
+_work in progress..._
+
+---
+
+This is the interpreter for the Lox language, developed in [Robert Nystrom's Crafting Interpreters](https://craftinginterpreters.com/contents.html) book, written in Rust instead of Java.
 
 ### Run
 [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) is required.
