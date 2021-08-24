@@ -318,7 +318,7 @@ mod test {
         let expr = Parser::new(&tokens).parse().unwrap();
         let expected_expression = "(group (+ (+ 1 (group (- 3 2))) 4))";
         assert!(
-            matches!(&expr[0], Stmt::Expression(expr) if &expr.to_string() == expected_expression)
+            matches!(&expr[0], Stmt::Expression(expr) if expr.to_string() == expected_expression)
         )
     }
 
