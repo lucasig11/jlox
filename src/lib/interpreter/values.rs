@@ -54,6 +54,7 @@ macro_rules! cmpop {
 }
 
 /// Internal language types
+#[derive(Clone, Debug)]
 pub(crate) enum LoxValue {
     String(String),
     Nil,

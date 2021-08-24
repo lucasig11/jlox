@@ -36,11 +36,11 @@ impl<'a> Parser<'a> {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     errors.push(e);
-                    self.synchronize()
+                    self.synchronize();
                 }
-            }
+            };
         }
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             return Err(errors);
         }
         Ok(statements)
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
     }
 
     fn var_decl(&self) -> LoxResult<Stmt> {
-        let name = self.consume_ident("expected variable name")?;
+        let name = self.consume_ident("expected identifier")?;
         let initializer = if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
             self.expression()?
         } else {
@@ -63,7 +63,7 @@ impl<'a> Parser<'a> {
 
         self.consume(
             Punctuator::Semicolon.into(),
-            "expected ';' after variable declaration",
+            "expected `;` after variable declaration",
         )?;
         Ok(Stmt::Variable(name.to_owned(), initializer))
     }
@@ -78,21 +78,19 @@ impl<'a> Parser<'a> {
 
     fn print_stmt(&self) -> LoxResult<Stmt> {
         let value = self.expression()?;
-        self.consume(Punctuator::Semicolon.into(), "expected ';' after value")?;
+        self.consume(Punctuator::Semicolon.into(), "expected `;` after value")?;
         Ok(Stmt::Print(value))
     }
 
     fn expression_stmt(&self) -> LoxResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(Punctuator::Semicolon.into(), "expected ';' after value")?;
+        self.consume(Punctuator::Semicolon.into(), "expected `;` after value")?;
         Ok(Stmt::Expression(expr))
     }
 
     /// Helper function for recovering from errors.
     /// It walks the token buffer until it finds a statement boundary.
-    #[allow(dead_code)]
     fn synchronize(&self) {
-        self.inner.advance();
         while let Some(e) = self.inner.peek() {
             if let Some(t) = self.inner.previous() {
                 if t.kind() == &TokenKind::Punctuator(Punctuator::Semicolon) {
@@ -110,18 +108,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parses an expression.
     #[inline]
     fn expression(&self) -> LoxResult<Expr> {
         self.equality()
     }
 
-    /// Parse (in)equality expressions
+    /// Parses (in)equality expressions
     #[inline]
     fn equality(&self) -> LoxResult<Expr> {
         self.parse_left(&[Punctuator::Eq, Punctuator::NotEq], Self::comparison)
     }
 
-    /// Parse comparison expressions
+    /// Parses comparison expressions
     #[inline]
     fn comparison(&self) -> LoxResult<Expr> {
         self.parse_left(
@@ -135,19 +134,19 @@ impl<'a> Parser<'a> {
         )
     }
 
-    /// Parse addition/subtraction expressions
+    /// Parses addition/subtraction expressions
     #[inline]
     fn term(&self) -> LoxResult<Expr> {
         self.parse_left(&[Punctuator::Add, Punctuator::Sub], Self::factor)
     }
 
-    /// Parse division/multiplication expressions
+    /// Parses division/multiplication expressions
     #[inline]
     fn factor(&self) -> LoxResult<Expr> {
         self.parse_left(&[Punctuator::Div, Punctuator::Mul], Self::unary)
     }
 
-    /// Parse logic/arithmetic negation expressions
+    /// Parses logic/arithmetic negation expressions
     fn unary(&self) -> LoxResult<Expr> {
         if self.multi_check(&[Punctuator::Not, Punctuator::Sub]) {
             let op = self.inner.previous().unwrap().to_owned();
@@ -157,7 +156,7 @@ impl<'a> Parser<'a> {
         self.primary()
     }
 
-    /// Parse primary expressions (literals, groups)
+    /// Parses primary expressions (literals, groups)
     fn primary(&self) -> LoxResult<Expr> {
         if let Some(tk) = self.inner.peek() {
             let exp = match tk.kind() {
@@ -171,7 +170,7 @@ impl<'a> Parser<'a> {
                     let expr = self.expression()?;
                     self.consume(
                         Punctuator::CloseParen.into(),
-                        "expected ')' after expression",
+                        "expected `)` after expression",
                     )?;
                     return Ok(Expr::Grouping(expr.into()));
                 }
@@ -205,7 +204,7 @@ impl<'a> Parser<'a> {
         matches!(self.inner.peek(), Some(e) if e.kind() == kind)
     }
 
-    /// Consumes the next token if its kind is `T`. If not, return a [LoxError](crate::error::LoxError::Inner) with `msg`
+    /// Consumes the next token if its kind is `T`, otherwise return a [LoxError](crate::error::LoxError::Inner) with `msg`
     fn consume(&self, kind: TokenKind, msg: &str) -> LoxResult<&Token> {
         if self.check(&kind) {
             return Ok(self.inner.advance().unwrap());
@@ -213,18 +212,20 @@ impl<'a> Parser<'a> {
         Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into())
     }
 
-    /// Consumes an identifier, or returns and Error
+    /// Consumes an identifier, or returns an Error.
+    ///
+    /// An identifier needs this special function because it
+    /// carries a Box<str>, which can't be casted into a [TokenKind](super::token::TokenKind)
     fn consume_ident(&self, msg: &str) -> LoxResult<&Token> {
         if let Some(tk) = self.inner.peek() {
-            match tk.kind() {
-                &TokenKind::Identifier(_) => return Ok(self.inner.advance().unwrap()),
-                _ => {}
-            };
+            if let TokenKind::Identifier(_) = *tk.kind() {
+                return Ok(self.inner.advance().unwrap());
+            }
         };
         return Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into());
     }
 
-    /// Parse left associative tokens
+    /// Parses left associative tokens.
     fn parse_left<T, F>(&self, token_kinds: &[T], op_func: F) -> LoxResult<Expr>
     where
         T: Into<TokenKind> + Clone,
