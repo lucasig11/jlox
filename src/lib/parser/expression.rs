@@ -32,21 +32,21 @@ pub(crate) enum Expr {
 }
 
 use crate::error::*;
-use crate::lib::interpreter::LoxValue;
+use crate::lib::interpreter::{Environment, LoxValue};
 use crate::lib::token::{Punctuator, TokenKind};
 use std::convert::TryInto;
 
 impl Expr {
-    pub fn evaluate(&self) -> LoxResult<LoxValue> {
+    pub fn evaluate(&self, env: &Environment) -> LoxResult<LoxValue> {
         let pos = &self.position();
         match self {
             Expr::Literal(tk) => tk
                 .kind()
                 .try_into()
                 .map_err(|e: &str| InnerError::new(*pos, e).into()),
-            Expr::Grouping(expr) => (*expr).evaluate(),
+            Expr::Grouping(expr) => (*expr).evaluate(env),
             Expr::Unary(op, rhs) => {
-                let rhs = rhs.evaluate()?;
+                let rhs = rhs.evaluate(env)?;
 
                 use Punctuator::*;
 
@@ -64,8 +64,8 @@ impl Expr {
             }
 
             Expr::Binary(lhs, op, rhs) => {
-                let lhs = lhs.evaluate()?;
-                let rhs = rhs.evaluate()?;
+                let lhs = lhs.evaluate(env)?;
+                let rhs = rhs.evaluate(env)?;
                 use Punctuator::*;
                 let result = match *op.kind() {
                     TokenKind::Punctuator(Sub) => lhs - rhs,
@@ -86,7 +86,11 @@ impl Expr {
                 };
                 result.map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()).into())
             }
-            _ => todo!(),
+
+            Expr::Variable(name) => env
+                .get(&name.to_string())
+                .map_err(|e| InnerError::new(*pos, &e.to_string()).into()),
+            _ => todo!("{:#?}", self),
         }
     }
 

@@ -40,20 +40,22 @@ impl Lox {
     }
 
     fn run<T: AsRef<str>>(src: &str, src_filename: T) {
-        if src.trim().len().eq(&0) {
+        if src.trim().is_empty() {
             return;
         }
+
         std::env::set_var("LOX_SRC_FILE", src_filename.as_ref());
+
         let run = |src| {
             let tokens = Lexer::new(src).scan_tokens().map_err(|e| vec![e])?;
             let expr = Parser::new(&tokens).parse()?;
-            Interpreter::interpret(expr)
+            Interpreter::new(expr).interpret()
         };
 
         if let Err(errors) = run(src) {
             for e in errors {
                 let e = InterpreterError::from(e, src);
-                println!("{}", e);
+                eprintln!("{}\n", e);
             }
         }
     }

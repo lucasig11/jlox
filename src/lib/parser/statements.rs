@@ -1,5 +1,6 @@
 use crate::error::*;
-use crate::lib::token::Token;
+use crate::lib::interpreter::{self, LoxValue};
+use crate::lib::token::{Keyword, Token};
 
 use super::Expr;
 
@@ -26,14 +27,19 @@ pub(crate) enum Stmt {
 }
 
 impl Stmt {
-    pub fn execute(&self) -> LoxResult<()> {
+    pub fn execute(&self, env: &interpreter::Environment) -> LoxResult<()> {
         match &self {
             Stmt::Expression(expr) => {
-                expr.evaluate()?;
+                expr.evaluate(env)?;
             }
-            Stmt::Print(expr) => println!("{}", expr.evaluate()?),
-            Stmt::Variable(name, value) => {
-                println!("Declared var {} with value {}", name, value,);
+            Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
+            Stmt::Variable(name, initializer) => {
+                let value = match initializer {
+                    Expr::Literal(t) if *t.kind() == Keyword::Nil.into() => LoxValue::Nil,
+                    _ => initializer.evaluate(env)?,
+                };
+
+                env.define(&name.to_string(), value);
             }
             Stmt::Return(_, _) => todo!(),
             Stmt::If(_, _, _) => todo!(),
