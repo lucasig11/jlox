@@ -80,7 +80,7 @@ impl Expr {
                     TokenKind::Punctuator(NotEq) => Ok(LoxValue::Boolean(lhs != rhs)),
                     _ => Err(InnerError::new(
                         *pos,
-                        "attempt to evaluate an invalid binary expression",
+                        "attempt to evaluate an invalid binary expression. this is probably a bug.",
                     )
                     .into()),
                 };
