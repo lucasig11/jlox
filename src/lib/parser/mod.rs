@@ -111,9 +111,22 @@ impl<'a> Parser<'a> {
     /// Parses an expression.
     #[inline]
     fn expression(&self) -> LoxResult<Expr> {
-        self.equality()
+        self.assignment()
     }
 
+    fn assignment(&self) -> LoxResult<Expr> {
+        let expr = self.equality()?;
+
+        if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
+            let eq_sign = self.inner.previous().unwrap();
+            let val = self.assignment()?;
+            if let Expr::Variable(name) = expr {
+                return Ok(Expr::Assign(name, val.into()));
+            }
+            return Err(InnerError::new(*eq_sign.span(), "invalid assigment target").into());
+        }
+        Ok(expr)
+    }
     /// Parses (in)equality expressions
     #[inline]
     fn equality(&self) -> LoxResult<Expr> {

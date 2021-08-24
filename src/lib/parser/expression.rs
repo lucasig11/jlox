@@ -90,6 +90,11 @@ impl Expr {
             Expr::Variable(name) => env
                 .get(&name.to_string())
                 .map_err(|e| InnerError::new(*pos, &e.to_string()).into()),
+
+            Expr::Assign(name, val) => {
+                let val = val.evaluate(env)?;
+                env.assign(&name.to_string(), &val)
+            }
             _ => todo!("{:#?}", self),
         }
     }
