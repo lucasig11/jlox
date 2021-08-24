@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::error::*;
 use crate::lib::interpreter::{self, LoxValue};
 use crate::lib::token::{Keyword, Token};
@@ -27,12 +29,14 @@ pub(crate) enum Stmt {
 }
 
 impl Stmt {
-    pub fn execute(&self, env: &interpreter::Environment) -> LoxResult<()> {
+    pub fn execute(&self, env: &interpreter::Environment, writer: &mut dyn Write) -> LoxResult<()> {
         match &self {
             Stmt::Expression(expr) => {
                 expr.evaluate(env)?;
             }
-            Stmt::Print(expr) => println!("{}", expr.evaluate(env)?),
+            Stmt::Print(expr) => {
+                writer.write_all(format!("{}\n", expr.evaluate(env)?).as_bytes())?;
+            }
             Stmt::Variable(name, initializer) => {
                 let value = match initializer {
                     Expr::Literal(t) if *t.kind() == Keyword::Nil.into() => LoxValue::Nil,

@@ -26,7 +26,7 @@ impl Interpreter {
     pub fn interpret(&self) -> Result<(), Vec<LoxError>> {
         let mut errors = Vec::new();
         for stmt in &self.statements {
-            if let Err(e) = stmt.execute(&self.env) {
+            if let Err(e) = stmt.execute(&self.env, &mut std::io::stdout()) {
                 errors.push(e);
             };
         }
