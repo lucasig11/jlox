@@ -5,3 +5,10 @@ print true == false;
 print 1.0 >= 3;
 
 print "20" + 21;
+
+let a = 2;
+let b = 3;
+print a + b;
+
+ 
+
