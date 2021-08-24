@@ -58,7 +58,12 @@ impl<'a> Parser<'a> {
         let initializer = if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
             self.expression()?
         } else {
-            Expr::Literal(Token::new(Keyword::Nil, *self.inner.peek().unwrap().span()))
+            // Unwrapping here is safe bc we definitely have a `previous` token in the buffer, the
+            // variable identifier.
+            Expr::Literal(Token::new(
+                Keyword::Nil,
+                *self.inner.previous().unwrap().span(),
+            ))
         };
 
         self.consume(
@@ -118,6 +123,8 @@ impl<'a> Parser<'a> {
         let expr = self.equality()?;
 
         if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
+            // Unwrapping here is safe bc if there wasn't a previous token, an error would've been
+            // thrown already by `self.equality`.
             let eq_sign = self.inner.previous().unwrap();
             let val = self.assignment()?;
             if let Expr::Variable(name) = expr {
@@ -162,6 +169,7 @@ impl<'a> Parser<'a> {
     /// Parses logic/arithmetic negation expressions
     fn unary(&self) -> LoxResult<Expr> {
         if self.multi_check(&[Punctuator::Not, Punctuator::Sub]) {
+            // Unwrapping here is safe bc if we're in this block, we were at the `previous` token
             let op = self.inner.previous().unwrap().to_owned();
             let rhs = self.unary()?;
             return Ok(Expr::Unary(op, rhs.into()));
@@ -220,6 +228,7 @@ impl<'a> Parser<'a> {
     /// Consumes the next token if its kind is `T`, otherwise return a [LoxError](crate::error::LoxError::Inner) with `msg`
     fn consume(&self, kind: TokenKind, msg: &str) -> LoxResult<&Token> {
         if self.check(&kind) {
+            // Unwrapping here is safe bc `self.check` returned true, so we know there's a next
             return Ok(self.inner.advance().unwrap());
         }
         Err(InnerError::new(*self.inner.previous().unwrap().span(), msg).into())
@@ -232,6 +241,8 @@ impl<'a> Parser<'a> {
     fn consume_ident(&self, msg: &str) -> LoxResult<&Token> {
         if let Some(tk) = self.inner.peek() {
             if let TokenKind::Identifier(_) = *tk.kind() {
+                // Unwrapping is safe here bc `inner.peek()` returned something, so we know there's
+                // a next
                 return Ok(self.inner.advance().unwrap());
             }
         };

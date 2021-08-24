@@ -30,6 +30,7 @@ impl<'a> fmt::Display for InterpreterError<'a> {
                     e.pos,
                     self.src_file
                         .get(e.pos.start().line_number() as usize - 1)
+                        // Unwrapping here is safe because we know this line exists
                         .unwrap(),
                 );
                 write!(f, "{} {}\n{}", ErrorLevel::Error, e, line)
@@ -155,6 +156,7 @@ fn fmt_line_error(span: Span, text: &str) -> String {
     format!(
         " {} {}:{}\n{space} {sep}\n{} {sep}\t{}\n{space} {sep}\t{here}",
         "-->".blue(),
+        // Unwrapping is safe here bc we always set this variable when the program runs
         std::env::var("LOX_SRC_FILE").unwrap(),
         start,
         start.line_number().to_string().blue(),
