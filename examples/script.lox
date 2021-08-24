@@ -11,4 +11,8 @@ let b = 3;
 print a + b;
 
  
+let foo = "bar";
+print "foo is: " + foo;
 
+foo = 42;
+print "foo now is: " + foo;
