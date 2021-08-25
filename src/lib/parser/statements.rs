@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use crate::error::*;
-use crate::lib::interpreter::{self, LoxValue};
+use crate::lib::interpreter::{self, Environment, LoxValue};
 use crate::lib::token::{Keyword, Token};
 
 use super::Expr;
@@ -29,7 +29,7 @@ pub(crate) enum Stmt {
 }
 
 impl Stmt {
-    pub fn execute(&self, env: &interpreter::Environment, writer: &mut dyn Write) -> LoxResult<()> {
+    pub fn execute(&self, env: &Environment, writer: &mut dyn Write) -> LoxResult<()> {
         match &self {
             Stmt::Expression(expr) => {
                 expr.evaluate(env)?;
@@ -45,12 +45,17 @@ impl Stmt {
 
                 env.define(&name.to_string(), value);
             }
+            Stmt::Block(stmts) => {
+                let scope = Environment::from(env);
+                for stmt in stmts {
+                    stmt.execute(&scope, writer)?;
+                }
+            }
             Stmt::Return(_, _) => todo!(),
             Stmt::If(_, _, _) => todo!(),
             Stmt::Function(_, _, _) => todo!(),
             Stmt::Class(_, _, _) => todo!(),
             Stmt::While(_, _) => todo!(),
-            Stmt::Block(_) => todo!(),
         };
         Ok(())
     }

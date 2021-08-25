@@ -74,11 +74,31 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&self) -> LoxResult<Stmt> {
-        if self.check(&TokenKind::Keyword(Keyword::Print)) {
-            self.inner.advance();
-            return self.print_stmt();
+        use Keyword::*;
+        use Punctuator::*;
+        if let Some(t) = self.inner.peek() {
+            match *t.kind() {
+                TokenKind::Keyword(Print) => {
+                    self.inner.advance();
+                    return self.print_stmt();
+                }
+                TokenKind::Punctuator(OpenBlock) => {
+                    self.inner.advance();
+                    return self.block_stmt();
+                }
+                _ => {}
+            };
         }
         self.expression_stmt()
+    }
+
+    fn block_stmt(&self) -> LoxResult<Stmt> {
+        let mut statements = Vec::new();
+        while !self.check(&Punctuator::CloseBlock.into()) && self.inner.peek().is_some() {
+            statements.push(self.declaration()?);
+        }
+        self.consume(Punctuator::CloseBlock.into(), "expected `}` after block")?;
+        Ok(Stmt::Block(statements))
     }
 
     fn print_stmt(&self) -> LoxResult<Stmt> {
