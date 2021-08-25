@@ -9,12 +9,12 @@ mod values;
 
 /// Executes the statements generated in the parsing stage.
 /// This lifetime corresponds to the scope in [Lox::run](crate::lib::Lox::run)
-pub(crate) struct Interpreter {
-    env: Environment,
+pub(crate) struct Interpreter<'e> {
+    env: Environment<'e>,
     statements: Vec<Stmt>,
 }
 
-impl Interpreter {
+impl<'e> Interpreter<'e> {
     pub fn new(statements: Vec<Stmt>) -> Self {
         Self {
             statements,

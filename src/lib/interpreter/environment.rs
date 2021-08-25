@@ -6,13 +6,18 @@ use crate::error::{LoxError, LoxResult};
 
 use super::LoxValue;
 
+/// Stores variables declared during the program, and keeps track of the scopes as well.
+///
+/// A local environment is created from, and keeps a reference to, it's parent (enclosing)
+/// environment. The global one has no enclosing env.
+/// The lifetime here bounds to the "outter" environment, which must live longer than
 #[derive(Debug)]
-pub(crate) struct Environment {
+pub(crate) struct Environment<'a> {
     values: RefCell<HashMap<Box<str>, LoxValue>>,
-    enclosing: Option<Box<Environment>>,
+    enclosing: Option<&'a Environment<'a>>,
 }
 
-impl Environment {
+impl<'p> Environment<'p> {
     /// Creates a new global environment
     pub fn new() -> Self {
         Self {
@@ -21,10 +26,10 @@ impl Environment {
         }
     }
 
-    /// Creates a local environment from one in lower precedence (higher scope)
-    pub fn from(oth: Self) -> Self {
+    /// Creates a local environment with a reference to its parent.
+    pub fn from(oth: &'p Self) -> Self {
         Self {
-            enclosing: Some(Box::new(oth)),
+            enclosing: Some(oth),
             values: Default::default(),
         }
     }
