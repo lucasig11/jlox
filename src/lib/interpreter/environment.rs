@@ -9,11 +9,22 @@ use super::LoxValue;
 #[derive(Debug)]
 pub(crate) struct Environment {
     values: RefCell<HashMap<Box<str>, LoxValue>>,
+    enclosing: Option<Box<Environment>>,
 }
 
 impl Environment {
+    /// Creates a new global environment
     pub fn new() -> Self {
         Self {
+            enclosing: None,
+            values: Default::default(),
+        }
+    }
+
+    /// Creates a local environment from one in lower precedence (higher scope)
+    pub fn from(oth: Self) -> Self {
+        Self {
+            enclosing: Some(Box::new(oth)),
             values: Default::default(),
         }
     }
@@ -28,16 +39,24 @@ impl Environment {
                 *v = val.to_owned();
                 Ok(v.clone())
             }
-            None => Err(LoxError::Generic(format!("undefined variable `{}`", &name))),
+            None => {
+                if let Some(env) = &self.enclosing {
+                    return env.get(name);
+                }
+                Err(LoxError::Generic(format!("undefined variable `{}`", &name)))
+            }
         }
     }
 
     pub fn get(&self, name: &str) -> LoxResult<LoxValue> {
-        if let Some(t) = self.values.borrow_mut().get(name) {
-            // TODO: return reference (?)
-            Ok(t.clone())
-        } else {
-            Err(LoxError::Generic(format!("undefined variable `{}`", &name)))
+        if let Some(t) = self.values.borrow().get(name) {
+            return Ok(t.clone());
         }
+
+        if let Some(env) = &self.enclosing {
+            return env.get(name);
+        }
+
+        Err(LoxError::Generic(format!("undefined variable `{}`", &name)))
     }
 }
