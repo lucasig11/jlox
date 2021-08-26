@@ -74,6 +74,9 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&self) -> LoxResult<Stmt> {
+        if self.matches(Keyword::For) {
+            return self.for_stmt();
+        }
         if self.matches(Keyword::If) {
             return self.if_stmt();
         }
@@ -91,6 +94,53 @@ impl<'a> Parser<'a> {
         }
 
         self.expression_stmt()
+    }
+
+    fn for_stmt(&self) -> LoxResult<Stmt> {
+        self.consume(Punctuator::OpenParen, "expected `(` after `for` keyword")?;
+
+        let initializer = if self.matches(Punctuator::Semicolon) {
+            None
+        } else if self.matches(Keyword::Let) {
+            Some(self.var_decl()?)
+        } else {
+            Some(self.expression_stmt()?)
+        };
+
+        let condition = if !self.check(Punctuator::Semicolon) {
+            self.expression()?
+        } else {
+            Expr::Literal(Token::new(
+                TokenKind::BooleanLiteral(true),
+                *self.inner.previous().unwrap().span(),
+            ))
+        };
+
+        self.consume(Punctuator::Semicolon, "expected `;` after condition")?;
+
+        let increment = if !self.check(Punctuator::CloseParen) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(Punctuator::CloseParen, "expected `)` after for clauses")?;
+
+        let mut body = self.statement()?;
+
+        // Append the increment expression, if there's one, at the end of the loop
+        if let Some(expr) = increment {
+            body = Stmt::Block(vec![body, Stmt::Expression(expr)]);
+        }
+
+        body = Stmt::While(condition, body.into());
+
+        // Place the initialization before the loop body
+        if let Some(stmt) = initializer {
+            body = Stmt::Block(vec![stmt, body]);
+        }
+
+        Ok(body)
     }
 
     fn while_stmt(&self) -> LoxResult<Stmt> {
