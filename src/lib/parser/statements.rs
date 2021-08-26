@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use crate::error::*;
-use crate::lib::interpreter::{self, Environment, LoxValue};
+use crate::lib::interpreter::{Environment, LoxValue};
 use crate::lib::token::{Keyword, Token};
 
 use super::Expr;
@@ -15,7 +15,7 @@ pub(crate) enum Stmt {
     /// Return expression(keyword, value)
     Return(Token, Expr),
     /// If statement(condition, then, else)
-    If(Expr, Box<Stmt>, Box<Stmt>),
+    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
     /// Function statement(name, params, body)
     Function(Token, Vec<Token>, Vec<Stmt>),
     /// Class statement(name, superclass: Expr::Variable, methods: Vec<Stmt::Function>)
@@ -51,8 +51,15 @@ impl Stmt {
                     stmt.execute(&scope, writer)?;
                 }
             }
+            Stmt::If(condition, then_branch, else_branch) => {
+                let condition = condition.evaluate(env)?;
+                if condition.is_truthy() {
+                    then_branch.execute(env, writer)?;
+                } else if let Some(stmt) = else_branch {
+                    stmt.execute(env, writer)?;
+                }
+            }
             Stmt::Return(_, _) => todo!(),
-            Stmt::If(_, _, _) => todo!(),
             Stmt::Function(_, _, _) => todo!(),
             Stmt::Class(_, _, _) => todo!(),
             Stmt::While(_, _) => todo!(),

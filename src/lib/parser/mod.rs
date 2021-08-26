@@ -78,6 +78,10 @@ impl<'a> Parser<'a> {
         use Punctuator::*;
         if let Some(t) = self.inner.peek() {
             match *t.kind() {
+                TokenKind::Keyword(If) => {
+                    self.inner.advance();
+                    return self.if_stmt();
+                }
                 TokenKind::Keyword(Print) => {
                     self.inner.advance();
                     return self.print_stmt();
@@ -90,6 +94,31 @@ impl<'a> Parser<'a> {
             };
         }
         self.expression_stmt()
+    }
+
+    fn if_stmt(&self) -> LoxResult<Stmt> {
+        let condition = self.expression()?;
+        self.consume(Punctuator::OpenBlock.into(), "expected `{` after condition")?;
+
+        let then_branch = self.statement()?;
+        self.consume(Punctuator::CloseBlock.into(), "expected `}` after if block")?;
+
+        let else_branch = if self.inner.next_if(self.check(&Keyword::Else.into())) {
+            self.consume(
+                Punctuator::OpenBlock.into(),
+                "expected `{` after else keyword",
+            )?;
+            let else_branch = self.statement()?;
+            self.consume(
+                Punctuator::CloseBlock.into(),
+                "expected `}` after else block",
+            )?;
+            Some(else_branch.into())
+        } else {
+            None
+        };
+
+        Ok(Stmt::If(condition, then_branch.into(), else_branch))
     }
 
     fn block_stmt(&self) -> LoxResult<Stmt> {
