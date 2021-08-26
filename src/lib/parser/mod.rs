@@ -169,7 +169,7 @@ impl<'a> Parser<'a> {
     }
 
     fn assignment(&self) -> LoxResult<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.matches(Punctuator::Assign) {
             // Unwrapping here is safe bc if there wasn't a previous token, an error would've been
@@ -183,6 +183,28 @@ impl<'a> Parser<'a> {
         }
         Ok(expr)
     }
+
+    /// Parses a logical OR
+    fn or(&self) -> LoxResult<Expr> {
+        let mut expr = self.and()?;
+        while self.matches(Keyword::Or) {
+            let op = self.inner.previous().unwrap().to_owned();
+            let rhs = self.and()?;
+            expr = Expr::Logical(expr.into(), op, rhs.into());
+        }
+        Ok(expr)
+    }
+
+    fn and(&self) -> LoxResult<Expr> {
+        let mut expr = self.equality()?;
+        while self.matches(Keyword::And) {
+            let op = self.inner.previous().unwrap().to_owned();
+            let rhs = self.equality()?;
+            expr = Expr::Logical(expr.into(), op, rhs.into());
+        }
+        Ok(expr)
+    }
+
     /// Parses (in)equality expressions
     #[inline]
     fn equality(&self) -> LoxResult<Expr> {

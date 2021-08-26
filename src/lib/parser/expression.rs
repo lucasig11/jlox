@@ -87,6 +87,20 @@ impl Expr {
                 result.map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()).into())
             }
 
+            Expr::Logical(lhs, op, rhs) => {
+                let lhs = lhs.evaluate(env)?;
+                use crate::lib::token::Keyword;
+
+                if let TokenKind::Keyword(Keyword::Or) = *op.kind() {
+                    if lhs.is_truthy() {
+                        return Ok(lhs);
+                    }
+                } else if !lhs.is_truthy() {
+                    return Ok(lhs);
+                }
+
+                rhs.evaluate(env)
+            }
             Expr::Variable(name) => env
                 .get(&name.to_string())
                 .map_err(|e| InnerError::new(*pos, &e.to_string()).into()),
