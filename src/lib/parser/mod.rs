@@ -106,19 +106,14 @@ impl<'a> Parser<'a> {
         let condition = self.expression()?;
         self.consume(Punctuator::OpenBlock.into(), "expected `{` after condition")?;
 
-        let then_branch = self.statement()?;
-        self.consume(Punctuator::CloseBlock.into(), "expected `}` after if block")?;
+        let then_branch = self.block_stmt()?;
 
         let else_branch = if self.matches(Keyword::Else) {
             self.consume(
                 Punctuator::OpenBlock.into(),
                 "expected `{` after else keyword",
             )?;
-            let else_branch = self.statement()?;
-            self.consume(
-                Punctuator::CloseBlock.into(),
-                "expected `}` after else block",
-            )?;
+            let else_branch = self.block_stmt()?;
             Some(else_branch.into())
         } else {
             None
