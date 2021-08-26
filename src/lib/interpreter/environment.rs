@@ -46,7 +46,7 @@ impl<'p> Environment<'p> {
             }
             None => {
                 if let Some(env) = &self.enclosing {
-                    return env.get(name);
+                    return env.assign(name, val);
                 }
                 Err(LoxError::Generic(format!("undefined variable `{}`", &name)))
             }
