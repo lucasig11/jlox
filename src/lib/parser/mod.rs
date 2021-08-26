@@ -121,7 +121,7 @@ impl<'a> Parser<'a> {
 
     fn block_stmt(&self) -> LoxResult<Stmt> {
         let mut statements = Vec::new();
-        while !self.check(&Punctuator::CloseBlock.into()) && self.inner.peek().is_some() {
+        while !self.check(Punctuator::CloseBlock) && self.inner.peek().is_some() {
             statements.push(self.declaration()?);
         }
         self.consume(Punctuator::CloseBlock, "expected `}` after block")?;
@@ -286,18 +286,18 @@ impl<'a> Parser<'a> {
     }
 
     fn matches<T: Into<TokenKind>>(&self, kind: T) -> bool {
-        self.inner.next_if(self.check(&kind.into()))
+        self.inner.next_if(self.check(kind))
     }
 
     /// Peeks the current token and returns true if its kind is equal to `kind`
     #[inline]
-    fn check(&self, kind: &TokenKind) -> bool {
-        matches!(self.inner.peek(), Some(e) if e.kind() == kind)
+    fn check<T: Into<TokenKind>>(&self, kind: T) -> bool {
+        matches!(self.inner.peek(), Some(e) if e.kind() == &kind.into())
     }
 
     /// Consumes the next token if its kind is `T`, otherwise return a [LoxError](crate::error::LoxError::Inner) with `msg`
     fn consume<T: Into<TokenKind>>(&self, kind: T, msg: &str) -> LoxResult<&Token> {
-        if self.check(&kind.into()) {
+        if self.check(kind) {
             // Unwrapping here is safe bc `self.check` returned true, so we know there's a next
             return Ok(self.inner.advance().unwrap());
         }
