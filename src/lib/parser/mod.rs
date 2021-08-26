@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&self) -> LoxResult<Stmt> {
-        if self.inner.next_if(self.check(&Keyword::Let.into())) {
+        if self.matches(Keyword::Let) {
             return self.var_decl();
         }
         self.statement()
@@ -55,7 +55,7 @@ impl<'a> Parser<'a> {
 
     fn var_decl(&self) -> LoxResult<Stmt> {
         let name = self.consume_ident("expected identifier")?;
-        let initializer = if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
+        let initializer = if self.matches(Punctuator::Assign) {
             self.expression()?
         } else {
             // Unwrapping here is safe bc we definitely have a `previous` token in the buffer, the
@@ -103,7 +103,7 @@ impl<'a> Parser<'a> {
         let then_branch = self.statement()?;
         self.consume(Punctuator::CloseBlock.into(), "expected `}` after if block")?;
 
-        let else_branch = if self.inner.next_if(self.check(&Keyword::Else.into())) {
+        let else_branch = if self.matches(Keyword::Else) {
             self.consume(
                 Punctuator::OpenBlock.into(),
                 "expected `{` after else keyword",
@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
     fn assignment(&self) -> LoxResult<Expr> {
         let expr = self.equality()?;
 
-        if self.inner.next_if(self.check(&Punctuator::Assign.into())) {
+        if self.matches(Punctuator::Assign) {
             // Unwrapping here is safe bc if there wasn't a previous token, an error would've been
             // thrown already by `self.equality`.
             let eq_sign = self.inner.previous().unwrap();
@@ -261,11 +261,15 @@ impl<'a> Parser<'a> {
     fn multi_check<T: Into<TokenKind> + Clone>(&self, tks: &[T]) -> bool {
         for t in tks {
             let t: TokenKind = t.to_owned().into();
-            if self.inner.next_if(self.check(&t)) {
+            if self.matches(t) {
                 return true;
             }
         }
         false
+    }
+
+    fn matches<T: Into<TokenKind>>(&self, kind: T) -> bool {
+        self.inner.next_if(self.check(&kind.into()))
     }
 
     /// Peeks the current token and returns true if its kind is equal to `kind`
