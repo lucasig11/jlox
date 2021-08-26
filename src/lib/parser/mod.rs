@@ -67,7 +67,7 @@ impl<'a> Parser<'a> {
         };
 
         self.consume(
-            Punctuator::Semicolon.into(),
+            Punctuator::Semicolon,
             "expected `;` after variable declaration",
         )?;
         Ok(Stmt::Variable(name.to_owned(), initializer))
@@ -95,7 +95,7 @@ impl<'a> Parser<'a> {
 
     fn while_stmt(&self) -> LoxResult<Stmt> {
         let condition = self.expression()?;
-        self.consume(Punctuator::OpenBlock.into(), "expected `{` after condition")?;
+        self.consume(Punctuator::OpenBlock, "expected `{` after condition")?;
 
         let body = self.block_stmt()?;
 
@@ -104,15 +104,12 @@ impl<'a> Parser<'a> {
 
     fn if_stmt(&self) -> LoxResult<Stmt> {
         let condition = self.expression()?;
-        self.consume(Punctuator::OpenBlock.into(), "expected `{` after condition")?;
+        self.consume(Punctuator::OpenBlock, "expected `{` after condition")?;
 
         let then_branch = self.block_stmt()?;
 
         let else_branch = if self.matches(Keyword::Else) {
-            self.consume(
-                Punctuator::OpenBlock.into(),
-                "expected `{` after else keyword",
-            )?;
+            self.consume(Punctuator::OpenBlock, "expected `{` after else keyword")?;
             let else_branch = self.block_stmt()?;
             Some(else_branch.into())
         } else {
@@ -127,19 +124,19 @@ impl<'a> Parser<'a> {
         while !self.check(&Punctuator::CloseBlock.into()) && self.inner.peek().is_some() {
             statements.push(self.declaration()?);
         }
-        self.consume(Punctuator::CloseBlock.into(), "expected `}` after block")?;
+        self.consume(Punctuator::CloseBlock, "expected `}` after block")?;
         Ok(Stmt::Block(statements))
     }
 
     fn print_stmt(&self) -> LoxResult<Stmt> {
         let value = self.expression()?;
-        self.consume(Punctuator::Semicolon.into(), "expected `;` after value")?;
+        self.consume(Punctuator::Semicolon, "expected `;` after value")?;
         Ok(Stmt::Print(value))
     }
 
     fn expression_stmt(&self) -> LoxResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(Punctuator::Semicolon.into(), "expected `;` after value")?;
+        self.consume(Punctuator::Semicolon, "expected `;` after value")?;
         Ok(Stmt::Expression(expr))
     }
 
@@ -261,10 +258,7 @@ impl<'a> Parser<'a> {
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
                     self.inner.advance();
                     let expr = self.expression()?;
-                    self.consume(
-                        Punctuator::CloseParen.into(),
-                        "expected `)` after expression",
-                    )?;
+                    self.consume(Punctuator::CloseParen, "expected `)` after expression")?;
                     return Ok(Expr::Grouping(expr.into()));
                 }
                 _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
@@ -302,8 +296,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Consumes the next token if its kind is `T`, otherwise return a [LoxError](crate::error::LoxError::Inner) with `msg`
-    fn consume(&self, kind: TokenKind, msg: &str) -> LoxResult<&Token> {
-        if self.check(&kind) {
+    fn consume<T: Into<TokenKind>>(&self, kind: T, msg: &str) -> LoxResult<&Token> {
+        if self.check(&kind.into()) {
             // Unwrapping here is safe bc `self.check` returned true, so we know there's a next
             return Ok(self.inner.advance().unwrap());
         }
