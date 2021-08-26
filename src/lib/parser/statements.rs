@@ -59,10 +59,14 @@ impl Stmt {
                     stmt.execute(env, writer)?;
                 }
             }
+            Stmt::While(condition, body) => {
+                while condition.evaluate(env)?.is_truthy() {
+                    body.execute(env, writer)?;
+                }
+            }
             Stmt::Return(_, _) => todo!(),
             Stmt::Function(_, _, _) => todo!(),
             Stmt::Class(_, _, _) => todo!(),
-            Stmt::While(_, _) => todo!(),
         };
         Ok(())
     }
