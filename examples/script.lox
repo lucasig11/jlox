@@ -37,19 +37,13 @@ print a;
 print b;
 print c;
 
-
-// Prints the fibonacci sequence
-fn fibonacci(n) {
-	let a = 0;
-	let temp;
-
-	for (let b = 1; a < n; b = temp + b) {
-	  	print a;
-	  	temp = a;
-		a = b;
+fn fib(n) {
+  	if (n <= 1) {
+  		return n;
 	}
+  	return fib(n - 2) + fib(n - 1);
 }
 
-fibonacci(100);
-fibonacci(10000);
-
+for (let i = 0; i < 20; i = i + 1) {
+  print fib(i);
+}
