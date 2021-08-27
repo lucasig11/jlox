@@ -8,7 +8,7 @@ pub(crate) use environment::Environment;
 mod environment;
 pub(crate) mod values;
 
-mod natives {
+mod builtins {
     use std::time::UNIX_EPOCH;
 
     use super::values::{LoxCallable, LoxValue};
@@ -53,7 +53,7 @@ impl<'e> Interpreter<'e> {
         let globals = Environment::new();
 
         // Define native functions
-        globals.define("clock", LoxValue::Callable(Rc::new(natives::Clock::new())));
+        globals.define("clock", LoxValue::Callable(Rc::new(builtins::Clock::new())));
 
         Self {
             statements,
