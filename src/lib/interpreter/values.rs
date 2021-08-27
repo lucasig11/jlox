@@ -208,6 +208,7 @@ impl std::fmt::Display for LoxValue {
             LoxValue::Integer(i) => write!(f, "{}", i),
             LoxValue::Boolean(b) => write!(f, "{}", b),
             LoxValue::String(s) => write!(f, "{}", s),
+            LoxValue::Callable(callable) => write!(f, "{}", callable.to_string()),
             LoxValue::Nil => write!(f, "nil"),
         }
     }
