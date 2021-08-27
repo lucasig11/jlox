@@ -116,6 +116,11 @@ impl From<std::io::Error> for LoxError {
     }
 }
 
+impl From<std::time::SystemTimeError> for LoxError {
+    fn from(err: std::time::SystemTimeError) -> Self {
+        Self::Generic(err.to_string())
+    }
+}
 impl From<std::num::ParseIntError> for LoxError {
     fn from(err: std::num::ParseIntError) -> Self {
         Self::ParseInt(err)
