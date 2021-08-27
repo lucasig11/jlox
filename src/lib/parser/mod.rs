@@ -104,10 +104,53 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&self) -> LoxResult<Stmt> {
+        if self.matches(Keyword::Fn) {
+            return self.func_decl("function");
+        }
         if self.matches(Keyword::Let) {
             return self.var_decl();
         }
         self.statement()
+    }
+
+    /// Parses a function declaration.
+    ///
+    /// The `kind` here does not correspond to the TokenKind, but to wether we're declaring a
+    /// function or a class method.
+    fn func_decl(&self, kind: &str) -> LoxResult<Stmt> {
+        let name = self.consume_ident(&format!("Expected {} name", &kind))?;
+        self.consume(
+            Punctuator::OpenParen,
+            &format!("expected `(` after {}", &kind),
+        )?;
+
+        let mut params = Vec::new();
+
+        if !self.check(Punctuator::CloseParen) {
+            loop {
+                if params.len() >= 255 {
+                    return Err(InnerError::new(
+                        *name.span(),
+                        "exceeded parameter limit (max: 255)",
+                    )
+                    .into());
+                }
+
+                params.push(self.consume_ident("expected parameter name")?.to_owned());
+
+                if !self.matches(Punctuator::Comma) {
+                    break;
+                }
+            }
+        }
+        self.consume(Punctuator::CloseParen, "expected `)` after parameters")?;
+        self.consume(
+            Punctuator::OpenBlock,
+            &format!("expected `{{` before {} body", &kind),
+        )?;
+
+        let body = self.block_stmt()?;
+        Ok(Stmt::Function(name.to_owned(), params, body.into()))
     }
 
     fn var_decl(&self) -> LoxResult<Stmt> {
@@ -350,7 +393,48 @@ impl<'a> Parser<'a> {
             let rhs = self.unary()?;
             return Ok(Expr::Unary(op, rhs.into()));
         }
-        self.primary()
+        self.call()
+    }
+
+    /// Parses a function call (max. arity: 255).
+    fn call(&self) -> LoxResult<Expr> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.matches(Punctuator::OpenParen) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+        Ok(expr)
+    }
+
+    fn finish_call(&self, callee: Expr) -> LoxResult<Expr> {
+        let mut args = Vec::new();
+
+        if !self.check(Punctuator::CloseParen) {
+            loop {
+                if args.len().ge(&255) {
+                    return Err(InnerError::new(
+                        *self.inner.peek().unwrap().span(),
+                        "cannot have more than 255 arguments",
+                    )
+                    .into());
+                }
+                args.push(self.expression()?);
+
+                if !self.matches(Punctuator::Comma) {
+                    break;
+                }
+            }
+        }
+
+        let paren = self
+            .consume(Punctuator::CloseParen, "Expected `)` after arguments")?
+            .to_owned();
+
+        Ok(Expr::Call(callee.into(), paren, args))
     }
 
     /// Parses primary expressions (literals, groups)

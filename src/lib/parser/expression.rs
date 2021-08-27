@@ -1,13 +1,13 @@
 use crate::lib::position::Span;
 use crate::lib::token::Token;
 
-#[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 /// Language expressions
+#[allow(dead_code)]
 pub(crate) enum Expr {
     /// Binary expression (Expr, Operator, Expr)
     Binary(Box<Expr>, Token, Box<Expr>),
-    /// Unary operator (op: Token, rhs: Expr)
+    /// Unary expression (op: Token, rhs: Expr)
     Unary(Token, Box<Expr>),
     /// Assign expression (name: Token, value: Expression)
     Assign(Token, Box<Expr>),
@@ -110,7 +110,30 @@ impl Expr {
                 env.assign(&name.to_string(), &val)
                     .map_err(|e| InnerError::new(*pos, &e.to_string()).into())
             }
-            _ => todo!("{:#?}", self),
+
+            Expr::Call(callee, _, args) => {
+                let callee = callee.evaluate(env)?;
+                let args: Vec<_> = args
+                    .iter()
+                    .map(|arg| arg.evaluate(env))
+                    .collect::<LoxResult<_>>()?;
+
+                if let LoxValue::Callable(c) = callee {
+                    if c.arity() != args.len() {
+                        return Err(InnerError::new(
+                            *pos,
+                            &format!("expected {} arguments, got {}", c.arity(), args.len()),
+                        )
+                        .into());
+                    }
+                    return c.call(env, &args);
+                }
+                Err(InnerError::new(*pos, "can only call functions or class constructors").into())
+            }
+            Expr::Get(_, _) => todo!(),
+            Expr::Set(_, _, _) => todo!(),
+            Expr::Super(_, _) => todo!(),
+            Expr::This(_) => todo!(),
         }
     }
 

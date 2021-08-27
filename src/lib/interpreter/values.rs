@@ -1,8 +1,12 @@
-use crate::error::{LoxError, LoxResult};
+use crate::error::{InnerError, LoxError, LoxResult};
+use crate::lib::parser::Stmt;
 use crate::lib::token::{Keyword, Numeric, TokenKind};
 use std::cmp::PartialEq;
 use std::convert::TryFrom;
 use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::rc::Rc;
+
+use super::Environment;
 
 macro_rules! check {
     ($test:expr, $($val:expr),+) => {
@@ -54,13 +58,75 @@ macro_rules! cmpop {
 }
 
 /// Internal language types
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) enum LoxValue {
     String(String),
     Nil,
     Decimal(f64),
     Integer(isize),
     Boolean(bool),
+    Callable(Rc<dyn LoxCallable>),
+}
+
+pub(crate) trait LoxCallable {
+    fn call(&self, interpreter: &Environment<'_>, args: &[LoxValue]) -> LoxResult<LoxValue>;
+    fn arity(&self) -> usize;
+    fn to_string(&self) -> String;
+}
+
+pub(crate) struct LoxFunction {
+    declaration: Stmt,
+    arity: usize,
+}
+
+impl LoxFunction {
+    pub fn new(declaration: Stmt) -> LoxResult<Self> {
+        if let Stmt::Function(_, ref params, _) = declaration {
+            let arity = params.len();
+            Ok(Self { declaration, arity })
+        } else {
+            Err(LoxError::Generic(format!(
+                "cannot create lox function from {} statement",
+                declaration
+            )))
+        }
+    }
+}
+
+impl LoxCallable for LoxFunction {
+    fn call(&self, env: &Environment<'_>, args: &[LoxValue]) -> LoxResult<LoxValue> {
+        let env = Environment::from(env);
+        if let Stmt::Function(_name, params, body) = &self.declaration {
+            for (idx, identifier) in params.iter().enumerate() {
+                env.define(
+                    &identifier.to_string(),
+                    args.get(idx)
+                        .ok_or_else(|| {
+                            InnerError::new(
+                                *identifier.span(),
+                                "missing arguments to function call",
+                            )
+                        })?
+                        .to_owned(),
+                )
+            }
+
+            body.execute(&env, &mut std::io::stdout())?;
+        }
+
+        Ok(LoxValue::Nil)
+    }
+
+    fn arity(&self) -> usize {
+        self.arity
+    }
+
+    fn to_string(&self) -> String {
+        if let Stmt::Function(name, _, _) = &self.declaration {
+            return format!("<fn {}>", name.to_string());
+        }
+        unreachable!()
+    }
 }
 
 impl LoxValue {

@@ -1,12 +1,13 @@
 use std::io::Write;
 
 use crate::error::*;
-use crate::lib::interpreter::{Environment, LoxValue};
+use crate::lib::interpreter::{Environment, LoxFunction, LoxValue};
 use crate::lib::token::{Keyword, Token};
 
 use super::Expr;
 
 #[allow(dead_code)]
+#[derive(Clone, Debug)]
 pub(crate) enum Stmt {
     /// Expression statement(expression)
     Expression(Expr),
@@ -17,7 +18,7 @@ pub(crate) enum Stmt {
     /// If statement(condition, then, else)
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
     /// Function statement(name, params, body)
-    Function(Token, Vec<Token>, Vec<Stmt>),
+    Function(Token, Vec<Token>, Box<Stmt>),
     /// Class statement(name, superclass: Expr::Variable, methods: Vec<Stmt::Function>)
     Class(Token, Expr, Vec<Stmt>),
     /// Variable statement(name, initializer)
@@ -64,10 +65,36 @@ impl Stmt {
                     body.execute(env, writer)?;
                 }
             }
+            Stmt::Function(name, _, _) => {
+                let function = LoxFunction::new(self.to_owned())?;
+                env.define(
+                    &name.to_string(),
+                    LoxValue::Callable(std::rc::Rc::new(function)),
+                );
+            }
             Stmt::Return(_, _) => todo!(),
-            Stmt::Function(_, _, _) => todo!(),
             Stmt::Class(_, _, _) => todo!(),
         };
         Ok(())
+    }
+}
+
+impl std::fmt::Display for Stmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match &self {
+                Stmt::Expression(_) => "expression",
+                Stmt::Print(_) => "print",
+                Stmt::Return(_, _) => "return",
+                Stmt::If(_, _, _) => "if",
+                Stmt::Function(_, _, _) => "function",
+                Stmt::Class(_, _, _) => "class",
+                Stmt::Variable(_, _) => "variable",
+                Stmt::While(_, _) => "while",
+                Stmt::Block(_) => "block",
+            }
+        )
     }
 }
