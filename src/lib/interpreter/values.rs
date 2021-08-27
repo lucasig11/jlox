@@ -111,7 +111,16 @@ impl LoxCallable for LoxFunction {
                 )
             }
 
-            body.execute(&env, &mut std::io::stdout())?;
+            if let Err(err) = body.execute(&env, &mut std::io::stdout()) {
+                match err {
+                    LoxError::Return(r) => {
+                        return Ok(r.val);
+                    }
+                    _ => {
+                        return Err(err);
+                    }
+                }
+            }
         }
 
         Ok(LoxValue::Nil)
@@ -202,6 +211,18 @@ impl TryFrom<&TokenKind> for LoxValue {
 }
 
 impl std::fmt::Display for LoxValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &*self {
+            LoxValue::Decimal(d) => write!(f, "{}", d),
+            LoxValue::Integer(i) => write!(f, "{}", i),
+            LoxValue::Boolean(b) => write!(f, "{}", b),
+            LoxValue::String(s) => write!(f, "{}", s),
+            LoxValue::Callable(callable) => write!(f, "{}", callable.to_string()),
+            LoxValue::Nil => write!(f, "nil"),
+        }
+    }
+}
+impl std::fmt::Debug for LoxValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &*self {
             LoxValue::Decimal(d) => write!(f, "{}", d),

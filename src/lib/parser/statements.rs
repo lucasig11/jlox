@@ -2,6 +2,7 @@ use std::io::Write;
 
 use crate::error::*;
 use crate::lib::interpreter::{Environment, LoxFunction, LoxValue};
+use crate::lib::position::Span;
 use crate::lib::token::{Keyword, Token};
 
 use super::Expr;
@@ -72,10 +73,35 @@ impl Stmt {
                     LoxValue::Callable(std::rc::Rc::new(function)),
                 );
             }
-            Stmt::Return(_, _) => todo!(),
+            Stmt::Return(kw, val) => {
+                return Err(ReturnVal::new(
+                    val.evaluate(env)?,
+                    Span::new(kw.span().start(), val.position().end()),
+                )
+                .into());
+            }
             Stmt::Class(_, _, _) => todo!(),
         };
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ReturnVal {
+    pub val: LoxValue,
+    pub pos: Span,
+}
+
+impl ReturnVal {
+    fn new(val: LoxValue, pos: Span) -> Self {
+        Self { val, pos }
+    }
+}
+
+// FIXME: refactor this out of here
+impl From<ReturnVal> for LoxError {
+    fn from(ret: ReturnVal) -> Self {
+        Self::Return(ret)
     }
 }
 

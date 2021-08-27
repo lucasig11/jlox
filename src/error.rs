@@ -1,7 +1,7 @@
 use colored::Colorize;
 use std::fmt;
 
-use crate::lib::position::Span;
+use crate::lib::{parser::statements::ReturnVal, position::Span};
 pub(crate) type LoxResult<T> = Result<T, LoxError>;
 
 /// Error that wraps the inner errors
@@ -15,7 +15,11 @@ pub(crate) struct InterpreterError<'a> {
 impl<'a> InterpreterError<'a> {
     pub fn from(err: LoxError, src_file: &'a str) -> Self {
         Self {
-            err,
+            err: if let LoxError::Return(e) = err {
+                InnerError::from(e).into()
+            } else {
+                err
+            },
             src_file: src_file.lines().collect(),
         }
     }
@@ -68,6 +72,14 @@ impl InnerError {
     }
 }
 
+impl From<ReturnVal> for InnerError {
+    fn from(ret: ReturnVal) -> Self {
+        Self {
+            pos: ret.pos,
+            message: LoxError::from(ret).to_string(),
+        }
+    }
+}
 impl std::fmt::Display for InnerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
@@ -77,6 +89,8 @@ impl std::fmt::Display for InnerError {
 /// Error wrapper for irrecoverable errors
 #[derive(Debug)]
 pub(crate) enum LoxError {
+    /// Return value wrapped in an error to be catched during the unwinding
+    Return(ReturnVal),
     /// Inner interpreter errors (lexing, parsing and evaluating stages)
     Inner(InnerError),
     /// Errors thrown by any I/O function
@@ -96,6 +110,9 @@ impl std::fmt::Display for LoxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LoxError::Inner(e) => write!(f, "{}", e),
+            LoxError::Return(_) => {
+                write!(f, "attempt to return out of a function block",)
+            }
             LoxError::Generic(e) => write!(f, "{}", e),
             LoxError::Io(e) => write!(f, "{} {}", ErrorLevel::Error, e),
             LoxError::ParseInt(e) => write!(f, "{}", e),

@@ -185,6 +185,10 @@ impl<'a> Parser<'a> {
             return self.print_stmt();
         }
 
+        if self.matches(Keyword::Return) {
+            return self.return_stmt();
+        }
+
         if self.matches(Keyword::While) {
             return self.while_stmt();
         }
@@ -194,6 +198,23 @@ impl<'a> Parser<'a> {
         }
 
         self.expression_stmt()
+    }
+
+    fn return_stmt(&self) -> LoxResult<Stmt> {
+        let kw = self.inner.previous().unwrap().to_owned();
+
+        let val = if !self.check(Punctuator::Semicolon) {
+            self.expression()?
+        } else {
+            Expr::Literal(Token::new(
+                TokenKind::Keyword(Keyword::Nil),
+                kw.span().end().into(),
+            ))
+        };
+
+        self.consume(Punctuator::Semicolon, "expected `;` after return statement")?;
+
+        Ok(Stmt::Return(kw, val))
     }
 
     fn for_stmt(&self) -> LoxResult<Stmt> {
