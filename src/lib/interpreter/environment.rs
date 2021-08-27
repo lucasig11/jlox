@@ -11,7 +11,6 @@ use super::LoxValue;
 /// A local environment is created from, and keeps a reference to, it's parent (enclosing)
 /// environment. The global one has no enclosing env.
 /// The lifetime here bounds to the "outter" environment, which must live longer than
-#[derive(Debug)]
 pub(crate) struct Environment<'a> {
     values: RefCell<HashMap<Box<str>, LoxValue>>,
     enclosing: Option<&'a Environment<'a>>,
@@ -45,10 +44,10 @@ impl<'p> Environment<'p> {
                 Ok(v.clone())
             }
             None => {
-                if let Some(env) = &self.enclosing {
+                if let Some(env) = self.enclosing {
                     return env.assign(name, val);
                 }
-                Err(LoxError::Generic(format!("undefined variable `{}`", &name)))
+                Err(LoxError::Generic(format!("`{}` is not defined", &name)))
             }
         }
     }
@@ -58,10 +57,10 @@ impl<'p> Environment<'p> {
             return Ok(t.clone());
         }
 
-        if let Some(env) = &self.enclosing {
+        if let Some(env) = self.enclosing {
             return env.get(name);
         }
 
-        Err(LoxError::Generic(format!("undefined variable `{}`", &name)))
+        Err(LoxError::Generic(format!("`{}` is not defined", &name)))
     }
 }
