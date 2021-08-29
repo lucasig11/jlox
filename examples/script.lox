@@ -44,6 +44,22 @@ fn fib(n) {
   	return fib(n - 2) + fib(n - 1);
 }
 
-for (let i = 0; i < 20; i = i + 1) {
+for (let i = 0; i < 3; i = i + 1) {
   print fib(i);
 }
+
+
+fn makeCounter() {
+	let i = 0;
+
+	fn count() {
+		i = i + 1;
+		print i;
+	}
+
+	return count;
+}
+
+let counter = makeCounter();
+counter();
+counter();
