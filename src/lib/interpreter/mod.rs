@@ -5,6 +5,8 @@ pub(crate) use self::values::{LoxFunction, LoxValue};
 use crate::lib::parser::Stmt;
 pub(crate) use environment::Environment;
 
+#[macro_use]
+pub(crate) mod util;
 mod environment;
 pub(crate) mod values;
 
