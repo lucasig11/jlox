@@ -19,7 +19,7 @@ pub(crate) enum LoxValue {
 }
 
 pub(crate) trait LoxCallable {
-    fn call(&self, interpreter: Rc<Environment>, args: &[LoxValue]) -> LoxResult<LoxValue>;
+    fn call(&self, env: Rc<Environment>, args: &[LoxValue]) -> LoxResult<LoxValue>;
     fn arity(&self) -> usize;
     fn to_string(&self) -> String;
 }
