@@ -1,54 +1,52 @@
 print "Hello, world";
-
-print true == false;
-
 print 1.0 >= 3;
-
 print "20" + 21;
 
 let a = 2;
 let b = 3;
 print a + b;
 
- 
-let foo = "bar";
+let foo;
+foo = "bar";
 print "foo is: " + foo;
 
-foo = 42;
-print "foo now is: " + foo;
 
 let a = "global a";
 let b = "global b";
 let c = "global c";
 {
-  let a = "outer a";
-  let b = "outer b";
-  {
-    let a = "inner a";
-    print a;
-    print b;
-    print c;
-  }
-  print a;
-  print b;
-  print c;
+	let a = "outer a";
+	let b = "outer b";
+	{
+		let a = "inner a";
+		print a;
+		print b;
+		print c;
+	}
+	print a;
+	print b;
+	print c;
 }
 print a;
 print b;
 print c;
 
+
+// Functions
 fn fib(n) {
-  	if (n <= 1) {
-  		return n;
+	if (n <= 1) {
+		return n;
 	}
-  	return fib(n - 2) + fib(n - 1);
+	return fib(n - 2) + fib(n - 1);
 }
 
+// For loop
 for (let i = 0; i < 3; i = i + 1) {
   print fib(i);
 }
 
 
+// Closures
 fn makeCounter() {
 	let i = 0;
 
@@ -63,3 +61,14 @@ fn makeCounter() {
 let counter = makeCounter();
 counter();
 counter();
+
+let a = "global";
+{
+  fn showA() {
+    print a;
+  }
+
+  showA();
+  let a = "block";
+  showA();
+}

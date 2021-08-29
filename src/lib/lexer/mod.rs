@@ -65,7 +65,6 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
-    // TODO: create Tokenizer trait
     fn lex_numeric(&mut self, start: char) -> LoxResult<()> {
         let buf = self
             .buffer

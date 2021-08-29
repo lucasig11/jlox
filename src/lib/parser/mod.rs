@@ -306,7 +306,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expression_stmt(&self) -> LoxResult<Stmt> {
-        let expr = self.expression()?;
+        let expr = dbg!(self.expression()?);
         self.consume(Punctuator::Semicolon, "expected `;` after value")?;
         Ok(Stmt::Expression(expr))
     }
@@ -317,6 +317,7 @@ impl<'a> Parser<'a> {
         while let Some(e) = self.inner.peek() {
             if let Some(t) = self.inner.previous() {
                 if t.kind() == &TokenKind::Punctuator(Punctuator::Semicolon) {
+                    self.inner.advance();
                     break;
                 }
             }
@@ -443,6 +444,7 @@ impl<'a> Parser<'a> {
                     )
                     .into());
                 }
+
                 args.push(self.expression()?);
 
                 if !self.matches(Punctuator::Comma) {
@@ -571,7 +573,7 @@ impl<'a, T> InnerIter<'a, T> {
 
     #[inline]
     fn advance(&self) -> Option<&T> {
-        if *self.current.borrow() < self.collection.len() {
+        if *self.current.borrow() <= self.collection.len() {
             *self.current.borrow_mut() += 1;
         }
         self.previous()
