@@ -1,13 +1,15 @@
 use crate::error::LoxError;
+use crate::lib::parser::Stmt;
+
 use std::rc::Rc;
 
-pub(crate) use self::values::{LoxFunction, LoxValue};
-use crate::lib::parser::Stmt;
+pub(crate) use self::{function::LoxFunction, values::LoxValue};
 pub(crate) use environment::Environment;
 
 #[macro_use]
 pub(crate) mod util;
 mod environment;
+mod function;
 pub(crate) mod values;
 
 mod builtins {
@@ -43,6 +45,7 @@ mod builtins {
         }
     }
 }
+
 /// Executes the statements generated in the parsing stage.
 /// This lifetime corresponds to the scope in [Lox::run](crate::lib::Lox::run)
 pub(crate) struct Interpreter<'e> {
