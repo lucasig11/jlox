@@ -9,10 +9,6 @@ use token::{Numeric, Punctuator, Token, TokenKind};
 
 use self::token::Keyword;
 
-pub(crate) trait Tokenizer {
-    fn lex<'a>(s: &str, lexer: &mut Lexer<'a>) -> LoxResult<()>;
-}
-
 pub struct Lexer<'a> {
     buffer: Cursor<'a>,
     start: Position,
