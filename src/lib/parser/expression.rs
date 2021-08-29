@@ -101,7 +101,7 @@ impl Expr {
                     return Ok(lhs);
                 }
 
-                rhs.evaluate(env.clone())
+                rhs.evaluate(env)
             }
             Expr::Variable(name) => env
                 .get(&name.to_string())
@@ -128,7 +128,7 @@ impl Expr {
                         )
                         .into());
                     }
-                    return c.call(env.clone(), &args);
+                    return c.call(env, &args);
                 }
                 Err(InnerError::new(*pos, "can only call functions or class constructors").into())
             }

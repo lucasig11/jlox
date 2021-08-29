@@ -35,10 +35,10 @@ impl Stmt {
     pub fn execute(&self, env: Rc<Environment>, writer: &mut dyn Write) -> LoxResult<()> {
         match &self {
             Stmt::Expression(expr) => {
-                expr.evaluate(env.clone())?;
+                expr.evaluate(env)?;
             }
             Stmt::Print(expr) => {
-                writer.write_all(format!("{}\n", expr.evaluate(env.clone())?).as_bytes())?;
+                writer.write_all(format!("{}\n", expr.evaluate(env)?).as_bytes())?;
             }
             Stmt::Variable(name, initializer) => {
                 let value = match initializer {
@@ -68,7 +68,7 @@ impl Stmt {
                 }
             }
             Stmt::Function(name, _, _) => {
-                let function = LoxFunction::new(self.to_owned())?;
+                let function = LoxFunction::new(self.to_owned(), env.clone())?;
                 env.define(
                     &name.to_string(),
                     LoxValue::Callable(std::rc::Rc::new(function)),
