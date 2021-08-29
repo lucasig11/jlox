@@ -20,8 +20,12 @@ pub(crate) enum LoxValue {
 
 pub(crate) trait LoxCallable {
     fn call(&self, env: Rc<Environment>, args: &[LoxValue]) -> LoxResult<LoxValue>;
-    fn arity(&self) -> usize;
-    fn to_string(&self) -> String;
+    fn arity(&self) -> usize {
+        0
+    }
+    fn to_string(&self) -> String {
+        String::from("<native fn>")
+    }
 }
 
 impl LoxValue {

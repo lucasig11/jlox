@@ -35,14 +35,6 @@ mod builtins {
                     .as_millis() as f64,
             ))
         }
-
-        fn arity(&self) -> usize {
-            0
-        }
-
-        fn to_string(&self) -> String {
-            "<native fn>".into()
-        }
     }
 
     impl LoxCallable for Read {
@@ -50,14 +42,6 @@ mod builtins {
             let mut buf = String::new();
             std::io::stdin().read_line(&mut buf)?;
             Ok(LoxValue::String(buf))
-        }
-
-        fn arity(&self) -> usize {
-            0
-        }
-
-        fn to_string(&self) -> String {
-            String::from("<fn read>")
         }
     }
 }
