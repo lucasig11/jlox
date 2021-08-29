@@ -3,6 +3,7 @@ use crate::lib::{
     parser::Stmt,
     LoxResult,
 };
+use std::rc::Rc;
 
 pub(crate) struct LoxFunction {
     declaration: Stmt,
@@ -24,13 +25,13 @@ impl LoxFunction {
 }
 
 impl LoxCallable for LoxFunction {
-    fn call(&self, env: &Environment<'_>, args: &[LoxValue]) -> LoxResult<LoxValue> {
+    fn call(&self, env: Rc<Environment>, args: &[LoxValue]) -> LoxResult<LoxValue> {
         let env = Environment::from(env);
         if let Stmt::Function(_name, params, body) = &self.declaration {
             for (ident, val) in params.iter().zip(args) {
                 env.define(&ident.to_string(), val.to_owned())
             }
-            if let Err(err) = body.execute(&env, &mut std::io::stdout()) {
+            if let Err(err) = body.execute(Rc::new(env), &mut std::io::stdout()) {
                 if let LoxError::Return(r) = err {
                     return Ok(r.val);
                 }

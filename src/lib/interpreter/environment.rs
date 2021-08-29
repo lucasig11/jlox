@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use std::cell::RefCell;
 
@@ -11,12 +12,12 @@ use super::LoxValue;
 /// A local environment is created from, and keeps a reference to, it's parent (enclosing)
 /// environment. The global one has no enclosing env.
 /// The lifetime here bounds to the "outter" environment, which must live longer than
-pub(crate) struct Environment<'a> {
+pub(crate) struct Environment {
     values: RefCell<HashMap<Box<str>, LoxValue>>,
-    enclosing: Option<&'a Environment<'a>>,
+    enclosing: Option<Rc<Environment>>,
 }
 
-impl<'p> Environment<'p> {
+impl Environment {
     /// Creates a new global environment
     pub fn new() -> Self {
         Self {
@@ -26,7 +27,7 @@ impl<'p> Environment<'p> {
     }
 
     /// Creates a local environment with a reference to its parent.
-    pub fn from(oth: &'p Self) -> Self {
+    pub fn from(oth: Rc<Self>) -> Self {
         Self {
             enclosing: Some(oth),
             values: Default::default(),
@@ -44,7 +45,7 @@ impl<'p> Environment<'p> {
                 Ok(v.clone())
             }
             None => {
-                if let Some(env) = self.enclosing {
+                if let Some(env) = &self.enclosing {
                     return env.assign(name, val);
                 }
                 Err(LoxError::Generic(format!("`{}` is not defined", &name)))
@@ -57,7 +58,7 @@ impl<'p> Environment<'p> {
             return Ok(t.clone());
         }
 
-        if let Some(env) = self.enclosing {
+        if let Some(env) = &self.enclosing {
             return env.get(name);
         }
 

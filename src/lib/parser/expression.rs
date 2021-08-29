@@ -1,5 +1,12 @@
-use crate::lib::position::Span;
-use crate::lib::token::Token;
+use crate::{
+    error::*,
+    lib::{
+        interpreter::{Environment, LoxValue},
+        position::Span,
+        token::{Punctuator, Token, TokenKind},
+    },
+};
+use std::{convert::TryInto, rc::Rc};
 
 #[derive(Clone, Debug)]
 /// Language expressions
@@ -31,13 +38,8 @@ pub(crate) enum Expr {
     Variable(Token),
 }
 
-use crate::error::*;
-use crate::lib::interpreter::{Environment, LoxValue};
-use crate::lib::token::{Punctuator, TokenKind};
-use std::convert::TryInto;
-
 impl Expr {
-    pub fn evaluate(&self, env: &Environment) -> LoxResult<LoxValue> {
+    pub fn evaluate(&self, env: Rc<Environment>) -> LoxResult<LoxValue> {
         let pos = &self.position();
         match self {
             Expr::Literal(tk) => tk
@@ -64,7 +66,7 @@ impl Expr {
             }
 
             Expr::Binary(lhs, op, rhs) => {
-                let lhs = lhs.evaluate(env)?;
+                let lhs = lhs.evaluate(env.clone())?;
                 let rhs = rhs.evaluate(env)?;
                 use Punctuator::*;
                 let result = match *op.kind() {
@@ -88,7 +90,7 @@ impl Expr {
             }
 
             Expr::Logical(lhs, op, rhs) => {
-                let lhs = lhs.evaluate(env)?;
+                let lhs = lhs.evaluate(env.clone())?;
                 use crate::lib::token::Keyword;
 
                 if let TokenKind::Keyword(Keyword::Or) = *op.kind() {
@@ -99,23 +101,23 @@ impl Expr {
                     return Ok(lhs);
                 }
 
-                rhs.evaluate(env)
+                rhs.evaluate(env.clone())
             }
             Expr::Variable(name) => env
                 .get(&name.to_string())
                 .map_err(|e| InnerError::new(*pos, &e.to_string()).into()),
 
             Expr::Assign(name, val) => {
-                let val = val.evaluate(env)?;
+                let val = val.evaluate(env.clone())?;
                 env.assign(&name.to_string(), &val)
                     .map_err(|e| InnerError::new(*pos, &e.to_string()).into())
             }
 
             Expr::Call(callee, _, args) => {
-                let callee = callee.evaluate(env)?;
+                let callee = callee.evaluate(env.clone())?;
                 let args: Vec<_> = args
                     .iter()
-                    .map(|arg| arg.evaluate(env))
+                    .map(|arg| arg.evaluate(env.clone()))
                     .collect::<LoxResult<_>>()?;
 
                 if let LoxValue::Callable(c) = callee {
@@ -126,7 +128,7 @@ impl Expr {
                         )
                         .into());
                     }
-                    return c.call(env, &args);
+                    return c.call(env.clone(), &args);
                 }
                 Err(InnerError::new(*pos, "can only call functions or class constructors").into())
             }

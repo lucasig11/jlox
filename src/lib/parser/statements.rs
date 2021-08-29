@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::rc::Rc;
 
 use crate::error::*;
 use crate::lib::interpreter::{Environment, LoxFunction, LoxValue};
@@ -31,30 +32,30 @@ pub(crate) enum Stmt {
 }
 
 impl Stmt {
-    pub fn execute(&self, env: &Environment, writer: &mut dyn Write) -> LoxResult<()> {
+    pub fn execute(&self, env: Rc<Environment>, writer: &mut dyn Write) -> LoxResult<()> {
         match &self {
             Stmt::Expression(expr) => {
-                expr.evaluate(env)?;
+                expr.evaluate(env.clone())?;
             }
             Stmt::Print(expr) => {
-                writer.write_all(format!("{}\n", expr.evaluate(env)?).as_bytes())?;
+                writer.write_all(format!("{}\n", expr.evaluate(env.clone())?).as_bytes())?;
             }
             Stmt::Variable(name, initializer) => {
                 let value = match initializer {
                     Expr::Literal(t) if *t.kind() == Keyword::Nil.into() => LoxValue::Nil,
-                    _ => initializer.evaluate(env)?,
+                    _ => initializer.evaluate(env.clone())?,
                 };
 
                 env.define(&name.to_string(), value);
             }
             Stmt::Block(stmts) => {
-                let scope = Environment::from(env);
+                let scope = Rc::new(Environment::from(env));
                 for stmt in stmts {
-                    stmt.execute(&scope, writer)?;
+                    stmt.execute(scope.clone(), writer)?;
                 }
             }
             Stmt::If(condition, then_branch, else_branch) => {
-                let condition = condition.evaluate(env)?;
+                let condition = condition.evaluate(env.clone())?;
                 if condition.is_truthy() {
                     then_branch.execute(env, writer)?;
                 } else if let Some(stmt) = else_branch {
@@ -62,8 +63,8 @@ impl Stmt {
                 }
             }
             Stmt::While(condition, body) => {
-                while condition.evaluate(env)?.is_truthy() {
-                    body.execute(env, writer)?;
+                while condition.evaluate(env.clone())?.is_truthy() {
+                    body.execute(env.clone(), writer)?;
                 }
             }
             Stmt::Function(name, _, _) => {
