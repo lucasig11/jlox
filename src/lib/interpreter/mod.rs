@@ -8,6 +8,7 @@ pub(crate) use environment::Environment;
 
 #[macro_use]
 pub(crate) mod util;
+
 mod environment;
 mod function;
 pub(crate) mod values;
@@ -20,13 +21,11 @@ mod builtins {
     use super::Environment;
     use crate::error::LoxResult;
 
+    #[derive(new)]
     pub struct Clock;
 
-    impl Clock {
-        pub fn new() -> Self {
-            Self {}
-        }
-    }
+    #[derive(new)]
+    pub struct Read;
 
     impl LoxCallable for Clock {
         fn call(&self, _: Rc<Environment>, _: &[LoxValue]) -> LoxResult<LoxValue> {
@@ -45,6 +44,22 @@ mod builtins {
             "<native fn>".into()
         }
     }
+
+    impl LoxCallable for Read {
+        fn call(&self, _: Rc<Environment>, _: &[LoxValue]) -> LoxResult<LoxValue> {
+            let mut buf = String::new();
+            std::io::stdin().read_line(&mut buf)?;
+            Ok(LoxValue::String(buf))
+        }
+
+        fn arity(&self) -> usize {
+            0
+        }
+
+        fn to_string(&self) -> String {
+            String::from("<fn read>")
+        }
+    }
 }
 
 /// Executes the statements generated in the parsing stage.
@@ -60,6 +75,7 @@ impl Interpreter {
 
         // Define native functions
         globals.define("clock", LoxValue::Callable(Rc::new(builtins::Clock::new())));
+        globals.define("read", LoxValue::Callable(Rc::new(builtins::Read::new())));
 
         Self {
             statements,

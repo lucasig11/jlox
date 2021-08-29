@@ -4,6 +4,9 @@ use structopt::StructOpt;
 pub(crate) mod error;
 mod lib;
 
+#[macro_use]
+extern crate derive_new;
+
 #[derive(StructOpt)]
 struct Options {
     #[structopt(parse(from_os_str), help = "Script file to be interpreted (*.lox)")]
