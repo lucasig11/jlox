@@ -306,7 +306,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expression_stmt(&self) -> LoxResult<Stmt> {
-        let expr = dbg!(self.expression()?);
+        let expr = self.expression()?;
         self.consume(Punctuator::Semicolon, "expected `;` after value")?;
         Ok(Stmt::Expression(expr))
     }
