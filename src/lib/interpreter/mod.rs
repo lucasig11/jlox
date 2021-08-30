@@ -6,7 +6,7 @@ use crate::{
     },
 };
 
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub(crate) use self::{function::LoxFunction, values::LoxValue};
 pub(crate) use environment::Environment;
@@ -59,6 +59,7 @@ mod builtins {
 pub(crate) struct Interpreter {
     globals: Rc<Environment>,
     statements: Vec<Stmt>,
+    locals: RefCell<HashMap<Expr, usize>>,
 }
 
 impl Interpreter {
@@ -73,11 +74,13 @@ impl Interpreter {
         Self {
             statements,
             globals: Rc::new(globals),
+            locals: Default::default(),
         }
     }
 
     pub fn resolve(&self, expr: &Expr, depth: usize) -> LoxResult<()> {
-        todo!()
+        self.locals.borrow_mut().insert(expr.to_owned(), depth);
+        Ok(())
     }
 
     /// Executes a list of statements.

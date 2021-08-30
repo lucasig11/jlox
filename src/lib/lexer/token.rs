@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{error::LoxError, lib::position::Span};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct Token {
     kind: TokenKind,
     span: Span,
@@ -31,7 +31,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub(crate) enum TokenKind {
     Keyword(Keyword),
     Punctuator(Punctuator),
@@ -97,7 +97,7 @@ impl std::fmt::Display for TokenKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Punctuator {
     OpenParen,
     CloseParen,
@@ -158,7 +158,7 @@ impl std::fmt::Display for Punctuator {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Keyword {
     And,
     Class,
@@ -227,12 +227,38 @@ impl FromStr for Keyword {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum Numeric {
     Integer(isize),
     Decimal(f64),
 }
 
+impl Numeric {
+    pub fn inner(&self) -> f64 {
+        match &self {
+            Self::Integer(i) => *i as f64,
+            Self::Decimal(d) => *d,
+        }
+    }
+}
+
+impl std::cmp::Eq for Numeric {}
+
+impl std::cmp::PartialEq for Numeric {
+    fn eq(&self, oth: &Self) -> bool {
+        self.inner().eq(&oth.inner())
+    }
+}
+
+impl std::hash::Hash for Numeric {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match &self {
+            Self::Integer(i) => i.hash(state),
+            // please dont yell at me for this ok
+            Self::Decimal(f) => (*f as u64).hash(state),
+        }
+    }
+}
 impl FromStr for Numeric {
     type Err = LoxError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {

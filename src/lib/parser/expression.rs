@@ -8,7 +8,7 @@ use crate::{
 };
 use std::{convert::TryInto, rc::Rc};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 /// Language expressions
 #[allow(dead_code)]
 pub(crate) enum Expr {

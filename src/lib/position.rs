@@ -1,7 +1,7 @@
 use crate::lib::LoxResult;
 use std::{iter::Peekable, num::NonZeroU32, str::Chars};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Position {
     line: NonZeroU32,
     col: NonZeroU32,
@@ -34,7 +34,7 @@ impl std::fmt::Display for Position {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     start: Position,
     end: Position,
