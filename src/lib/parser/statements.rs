@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::error::*;
 use crate::lib::interpreter::{Environment, LoxFunction, LoxValue};
 use crate::lib::position::Span;
-use crate::lib::token::{Keyword, Token};
+use crate::lib::token::Token;
 
 use super::Expr;
 
@@ -41,9 +41,10 @@ impl Stmt {
                 writer.write_all(format!("{}\n", expr.evaluate(env)?).as_bytes())?;
             }
             Stmt::Variable(name, initializer) => {
-                let value = match initializer {
-                    Expr::Literal(t) if *t.kind() == Keyword::Nil.into() => LoxValue::Nil,
-                    _ => initializer.evaluate(env.clone())?,
+                let value = if initializer.is_nil_expr() {
+                    LoxValue::Nil
+                } else {
+                    initializer.evaluate(env.clone())?
                 };
 
                 env.define(&name.to_string(), value);

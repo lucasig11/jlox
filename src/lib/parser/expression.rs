@@ -3,7 +3,7 @@ use crate::{
     lib::{
         interpreter::{Environment, LoxValue},
         position::Span,
-        token::{Punctuator, Token, TokenKind},
+        token::{Keyword, Punctuator, Token, TokenKind},
     },
 };
 use std::{convert::TryInto, rc::Rc};
@@ -91,7 +91,6 @@ impl Expr {
 
             Expr::Logical(lhs, op, rhs) => {
                 let lhs = lhs.evaluate(env.clone())?;
-                use crate::lib::token::Keyword;
 
                 if let TokenKind::Keyword(Keyword::Or) = *op.kind() {
                     if lhs.is_truthy() {
@@ -159,6 +158,10 @@ impl Expr {
                 Span::new(expr.position().start(), tk.span().end())
             }
         }
+    }
+
+    pub fn is_nil_expr(&self) -> bool {
+        matches!(&self, Expr::Literal(t) if *t.kind() == Keyword::Nil.into())
     }
 }
 

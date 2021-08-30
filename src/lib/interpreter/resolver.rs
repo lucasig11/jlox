@@ -6,7 +6,7 @@ use crate::{
     lib::{
         interpreter::Interpreter,
         parser::{Expr, Stmt},
-        token::{Keyword, Token},
+        token::Token,
         LoxResult,
     },
 };
