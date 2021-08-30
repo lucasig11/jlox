@@ -1,4 +1,7 @@
-use crate::error::{InterpreterError, LoxResult};
+use crate::{
+    error::{InterpreterError, LoxResult},
+    lib::interpreter::Resolver,
+};
 use std::{io::Write, path::PathBuf};
 
 mod interpreter;
@@ -48,8 +51,11 @@ impl Lox {
 
         let run = |src| {
             let tokens = Lexer::new(src).scan_tokens().map_err(|e| vec![e])?;
-            let expr = Parser::new(&tokens).parse()?;
-            Interpreter::new(expr).interpret()
+            let statements = Parser::new(&tokens).parse()?;
+            let interpreter = Interpreter::new(&statements);
+            let resolver = Resolver::new(&interpreter);
+            resolver.resolve(&statements).map_err(|e| vec![e])?;
+            interpreter.interpret()
         };
 
         if let Err(errors) = run(src) {

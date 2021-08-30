@@ -1,16 +1,22 @@
-use crate::error::LoxError;
-use crate::lib::parser::Stmt;
+use crate::{
+    error::LoxError,
+    lib::{
+        parser::{Expr, Stmt},
+        LoxResult,
+    },
+};
 
 use std::rc::Rc;
 
 pub(crate) use self::{function::LoxFunction, values::LoxValue};
 pub(crate) use environment::Environment;
+pub(crate) use resolver::Resolver;
 
 #[macro_use]
 pub(crate) mod util;
-
 mod environment;
 mod function;
+mod resolver;
 pub(crate) mod values;
 
 mod builtins {
@@ -56,7 +62,8 @@ pub(crate) struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(statements: Vec<Stmt>) -> Self {
+    pub fn new(statements: &[Stmt]) -> Self {
+        let statements = Vec::from(statements);
         let globals = Environment::new();
 
         // Define native functions
@@ -67,6 +74,10 @@ impl Interpreter {
             statements,
             globals: Rc::new(globals),
         }
+    }
+
+    pub fn resolve(&self, expr: &Expr, depth: usize) -> LoxResult<()> {
+        todo!()
     }
 
     /// Executes a list of statements.

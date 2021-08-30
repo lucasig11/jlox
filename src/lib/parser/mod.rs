@@ -70,7 +70,7 @@ pub(crate) mod expression;
 pub(crate) mod statements;
 use super::token::{Keyword, Punctuator, Token, TokenKind};
 use crate::error::{InnerError, LoxError, LoxResult};
-use expression::Expr;
+pub(crate) use expression::Expr;
 pub(crate) use statements::Stmt;
 use Keyword::*;
 
