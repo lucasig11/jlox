@@ -14,12 +14,12 @@ mod function;
 pub(crate) mod values;
 
 mod builtins {
-    use std::rc::Rc;
-    use std::time::UNIX_EPOCH;
-
-    use super::values::{LoxCallable, LoxValue};
-    use super::Environment;
+    use super::{
+        values::{LoxCallable, LoxValue},
+        Environment,
+    };
     use crate::error::LoxResult;
+    use std::{rc::Rc, time::UNIX_EPOCH};
 
     #[derive(new)]
     pub struct Clock;
@@ -27,6 +27,7 @@ mod builtins {
     #[derive(new)]
     pub struct Read;
 
+    /// Gets the system time as a unix timestamp and return it as a [`LoxValue::Decimal`].
     impl LoxCallable for Clock {
         fn call(&self, _: Rc<Environment>, _: &[LoxValue]) -> LoxResult<LoxValue> {
             Ok(LoxValue::Decimal(
@@ -37,6 +38,7 @@ mod builtins {
         }
     }
 
+    /// Reads a line from stdin, returning it as a [`LoxValue::String`]
     impl LoxCallable for Read {
         fn call(&self, _: Rc<Environment>, _: &[LoxValue]) -> LoxResult<LoxValue> {
             let mut buf = String::new();
