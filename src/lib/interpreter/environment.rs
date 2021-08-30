@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::rc::Rc;
+use std::{borrow::Borrow, collections::HashMap};
 
 use std::cell::RefCell;
 
@@ -63,5 +63,13 @@ impl Environment {
         }
 
         Err(LoxError::Generic(format!("`{}` is not defined", &name)))
+    }
+
+    pub fn get_at(&self, distance: usize, name: &str) -> LoxResult<&LoxValue> {
+        todo!()
+    }
+
+    fn ancestor(&self, distance: usize) -> &Self {
+        todo!()
     }
 }
