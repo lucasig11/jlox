@@ -86,8 +86,9 @@ impl Interpreter {
     /// Executes a list of statements.
     pub fn interpret(&self) -> Result<(), Vec<LoxError>> {
         let mut errors = Vec::new();
+        let env = Rc::new(Environment::from(self.globals.clone()));
         for stmt in &self.statements {
-            if let Err(e) = stmt.execute(self.globals.clone(), &mut std::io::stdout()) {
+            if let Err(e) = stmt.execute(env.clone(), &mut std::io::stdout()) {
                 errors.push(e);
             };
         }
