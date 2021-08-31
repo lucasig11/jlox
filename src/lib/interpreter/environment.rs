@@ -1,5 +1,5 @@
+use std::collections::HashMap;
 use std::rc::Rc;
-use std::{borrow::Borrow, collections::HashMap};
 
 use std::cell::RefCell;
 
@@ -11,7 +11,6 @@ use super::LoxValue;
 ///
 /// A local environment is created from, and keeps a reference to, it's parent (enclosing)
 /// environment. The global one has no enclosing env.
-/// The lifetime here bounds to the "outter" environment, which must live longer than
 pub(crate) struct Environment {
     values: RefCell<HashMap<Box<str>, LoxValue>>,
     enclosing: Option<Rc<Environment>>,
@@ -34,10 +33,12 @@ impl Environment {
         }
     }
 
+    /// Define a new variable in the current scope.
     pub fn define(&self, name: &str, val: LoxValue) {
         self.values.borrow_mut().insert(name.into(), val);
     }
 
+    /// Assign to a value at the innermost scope where it's found.
     pub fn assign(&self, name: &str, val: &LoxValue) -> LoxResult<LoxValue> {
         match self.values.borrow_mut().get_mut(name) {
             Some(v) => {
@@ -53,6 +54,7 @@ impl Environment {
         }
     }
 
+    /// Searches for a variable value from the innermost scope.
     pub fn get(&self, name: &str) -> LoxResult<LoxValue> {
         if let Some(t) = self.values.borrow().get(name) {
             return Ok(t.clone());
@@ -65,11 +67,22 @@ impl Environment {
         Err(LoxError::Generic(format!("`{}` is not defined", &name)))
     }
 
-    pub fn get_at(&self, distance: usize, name: &str) -> LoxResult<&LoxValue> {
-        todo!()
+    /// Gets a value from a speficic scope.
+    ///
+    /// This function relies on the variable binding and resolution performed by the [`Resolver`].
+    /// So we already know that the variable exists and where it was declared.
+    pub fn get_at(&self, distance: usize, name: &str) -> LoxResult<LoxValue> {
+        let values = self.ancestor(distance).values.borrow();
+        let val = values.get(name).unwrap();
+        Ok(val.to_owned())
     }
 
-    fn ancestor(&self, distance: usize) -> &Self {
-        todo!()
+    /// Helper function that retrieves a scope at a given distance from the local scope.
+    fn ancestor(&self, distance: usize) -> &Rc<Self> {
+        let mut env = self.enclosing.as_ref().unwrap();
+        for _ in 0..=distance {
+            env = env.enclosing.as_ref().unwrap();
+        }
+        env
     }
 }
