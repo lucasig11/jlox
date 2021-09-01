@@ -132,7 +132,8 @@ impl<'i> Resolver<'i> {
         let scopes = self.scopes.borrow();
         for (idx, scope) in scopes.iter().rev().enumerate() {
             if scope.contains_key(&name.to_string()) {
-                self.interpreter.resolve(expr, scopes.len() - idx)?;
+                self.interpreter
+                    .resolve(expr, scopes.len() - (scopes.len() - idx))?;
                 return Ok(());
             }
         }
