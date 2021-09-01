@@ -77,11 +77,25 @@ impl Environment {
         Ok(val.to_owned())
     }
 
+    pub fn assign_at(&self, distance: usize, name: &str, val: &LoxValue) -> LoxResult<()> {
+        let mut values = self.ancestor(distance).values.borrow_mut();
+        values.insert(name.into(), val.to_owned());
+        Ok(())
+    }
+
     /// Helper function that retrieves a scope at a given distance from the local scope.
-    fn ancestor(&self, distance: usize) -> &Rc<Self> {
-        let mut env = self.enclosing.as_ref().unwrap();
-        for _ in 0..=distance {
+    fn ancestor(&self, distance: usize) -> &Self {
+        let mut env = self;
+        for _ in 0..distance {
             env = env.enclosing.as_ref().unwrap();
+        }
+        env
+    }
+
+    pub fn global(&self) -> &Self {
+        let mut env = self;
+        while let Some(ref e) = env.enclosing {
+            env = e
         }
         env
     }
