@@ -1,10 +1,13 @@
-use std::io::Write;
-use std::rc::Rc;
+use std::{collections::HashMap, io::Write, rc::Rc};
 
-use crate::error::*;
-use crate::lib::interpreter::{Environment, LoxFunction, LoxValue};
-use crate::lib::position::Span;
-use crate::lib::token::Token;
+use crate::{
+    error::*,
+    lib::{
+        interpreter::{Environment, LoxFunction, LoxValue},
+        position::Span,
+        token::Token,
+    },
+};
 
 use super::Expr;
 
@@ -32,19 +35,24 @@ pub(crate) enum Stmt {
 }
 
 impl Stmt {
-    pub fn execute(&self, env: Rc<Environment>, writer: &mut dyn Write) -> LoxResult<()> {
+    pub fn execute(
+        &self,
+        env: Rc<Environment>,
+        locals: &HashMap<Expr, usize>,
+        writer: &mut dyn Write,
+    ) -> LoxResult<()> {
         match &self {
             Stmt::Expression(expr) => {
-                expr.evaluate(env)?;
+                expr.evaluate(env, locals)?;
             }
             Stmt::Print(expr) => {
-                writer.write_all(format!("{}\n", expr.evaluate(env)?).as_bytes())?;
+                writer.write_all(format!("{}\n", expr.evaluate(env, locals)?).as_bytes())?;
             }
             Stmt::Variable(name, initializer) => {
                 let value = if initializer.is_nil_expr() {
                     LoxValue::Nil
                 } else {
-                    initializer.evaluate(env.clone())?
+                    initializer.evaluate(env.clone(), locals)?
                 };
 
                 env.define(&name.to_string(), value);
@@ -52,20 +60,20 @@ impl Stmt {
             Stmt::Block(stmts) => {
                 let scope = Rc::new(Environment::from(env));
                 for stmt in stmts {
-                    stmt.execute(scope.clone(), writer)?;
+                    stmt.execute(scope.clone(), locals, writer)?;
                 }
             }
             Stmt::If(condition, then_branch, else_branch) => {
-                let condition = condition.evaluate(env.clone())?;
+                let condition = condition.evaluate(env.clone(), locals)?;
                 if condition.is_truthy() {
-                    then_branch.execute(env, writer)?;
+                    then_branch.execute(env, locals, writer)?;
                 } else if let Some(stmt) = else_branch {
-                    stmt.execute(env, writer)?;
+                    stmt.execute(env, locals, writer)?;
                 }
             }
             Stmt::While(condition, body) => {
-                while condition.evaluate(env.clone())?.is_truthy() {
-                    body.execute(env.clone(), writer)?;
+                while condition.evaluate(env.clone(), locals)?.is_truthy() {
+                    body.execute(env.clone(), locals, writer)?;
                 }
             }
             Stmt::Function(name, _, _) => {
@@ -77,7 +85,7 @@ impl Stmt {
             }
             Stmt::Return(kw, val) => {
                 return Err(ReturnVal::new(
-                    val.evaluate(env)?,
+                    val.evaluate(env, locals)?,
                     Span::new(kw.span().start(), val.position().end()),
                 )
                 .into());

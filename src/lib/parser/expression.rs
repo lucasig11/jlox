@@ -6,7 +6,7 @@ use crate::{
         token::{Keyword, Punctuator, Token, TokenKind},
     },
 };
-use std::{convert::TryInto, rc::Rc};
+use std::{collections::HashMap, convert::TryInto, rc::Rc};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 /// Language expressions
@@ -39,16 +39,20 @@ pub(crate) enum Expr {
 }
 
 impl Expr {
-    pub fn evaluate(&self, env: Rc<Environment>) -> LoxResult<LoxValue> {
+    pub fn evaluate(
+        &self,
+        env: Rc<Environment>,
+        locals: &HashMap<Expr, usize>,
+    ) -> LoxResult<LoxValue> {
         let pos = &self.position();
         match self {
             Expr::Literal(tk) => tk
                 .kind()
                 .try_into()
                 .map_err(|e: &str| InnerError::new(*pos, e).into()),
-            Expr::Grouping(expr) => (*expr).evaluate(env),
+            Expr::Grouping(expr) => (*expr).evaluate(env, locals),
             Expr::Unary(op, rhs) => {
-                let rhs = rhs.evaluate(env)?;
+                let rhs = rhs.evaluate(env, locals)?;
 
                 use Punctuator::*;
 
@@ -66,8 +70,8 @@ impl Expr {
             }
 
             Expr::Binary(lhs, op, rhs) => {
-                let lhs = lhs.evaluate(env.clone())?;
-                let rhs = rhs.evaluate(env)?;
+                let lhs = lhs.evaluate(env.clone(), locals)?;
+                let rhs = rhs.evaluate(env, locals)?;
                 use Punctuator::*;
                 let result = match *op.kind() {
                     TokenKind::Punctuator(Sub) => lhs - rhs,
@@ -90,7 +94,7 @@ impl Expr {
             }
 
             Expr::Logical(lhs, op, rhs) => {
-                let lhs = lhs.evaluate(env.clone())?;
+                let lhs = lhs.evaluate(env.clone(), locals)?;
 
                 if let TokenKind::Keyword(Keyword::Or) = *op.kind() {
                     if lhs.is_truthy() {
@@ -100,23 +104,35 @@ impl Expr {
                     return Ok(lhs);
                 }
 
-                rhs.evaluate(env)
+                rhs.evaluate(env, locals)
             }
-            Expr::Variable(name) => env
-                .get(&name.to_string())
-                .map_err(|e| InnerError::new(*pos, &e.to_string()).into()),
-
-            Expr::Assign(name, val) => {
-                let val = val.evaluate(env.clone())?;
-                env.assign(&name.to_string(), &val)
+            Expr::Variable(ref name) => {
+                if let Some(idx) = locals.get(self) {
+                    return env.get_at(*idx, &name.to_string());
+                }
+                env.global()
+                    .get(&name.to_string())
                     .map_err(|e| InnerError::new(*pos, &e.to_string()).into())
+            }
+            Expr::Assign(name, val) => {
+                let val = val.evaluate(env.clone(), locals)?;
+
+                if let Some(idx) = locals.get(self) {
+                    env.assign_at(*idx, &name.to_string(), &val)?;
+                    Ok(val)
+                } else {
+                    return env
+                        .global()
+                        .assign(&name.to_string(), &val)
+                        .map_err(|e| InnerError::new(*pos, &e.to_string()).into());
+                }
             }
 
             Expr::Call(callee, _, args) => {
-                let callee = callee.evaluate(env.clone())?;
+                let callee = callee.evaluate(env.clone(), locals)?;
                 let args: Vec<_> = args
                     .iter()
-                    .map(|arg| arg.evaluate(env.clone()))
+                    .map(|arg| arg.evaluate(env.clone(), locals))
                     .collect::<LoxResult<_>>()?;
 
                 if let LoxValue::Callable(c) = callee {
@@ -127,7 +143,7 @@ impl Expr {
                         )
                         .into());
                     }
-                    return c.call(env, &args);
+                    return c.call(env, locals, &args);
                 }
                 Err(InnerError::new(*pos, "can only call functions or class constructors").into())
             }

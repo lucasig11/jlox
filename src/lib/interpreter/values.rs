@@ -1,6 +1,8 @@
 use crate::error::{LoxError, LoxResult};
+use crate::lib::parser::Expr;
 use crate::lib::token::{Keyword, Numeric, TokenKind};
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 use std::rc::Rc;
@@ -19,7 +21,12 @@ pub(crate) enum LoxValue {
 }
 
 pub(crate) trait LoxCallable {
-    fn call(&self, env: Rc<Environment>, args: &[LoxValue]) -> LoxResult<LoxValue>;
+    fn call(
+        &self,
+        env: Rc<Environment>,
+        locals: &HashMap<Expr, usize>,
+        args: &[LoxValue],
+    ) -> LoxResult<LoxValue>;
     fn arity(&self) -> usize {
         0
     }

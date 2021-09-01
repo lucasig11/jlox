@@ -1,9 +1,9 @@
 use crate::lib::{
     interpreter::{values::LoxCallable, Environment, LoxError, LoxValue},
-    parser::Stmt,
+    parser::{Expr, Stmt},
     LoxResult,
 };
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 pub(crate) struct LoxFunction {
     declaration: Stmt,
@@ -30,13 +30,18 @@ impl LoxFunction {
 }
 
 impl LoxCallable for LoxFunction {
-    fn call(&self, _: Rc<Environment>, args: &[LoxValue]) -> LoxResult<LoxValue> {
+    fn call(
+        &self,
+        _: Rc<Environment>,
+        locals: &HashMap<Expr, usize>,
+        args: &[LoxValue],
+    ) -> LoxResult<LoxValue> {
         let env = Environment::from(self.closure.clone());
         if let Stmt::Function(_name, params, body) = &self.declaration {
             for (ident, val) in params.iter().zip(args) {
                 env.define(&ident.to_string(), val.to_owned())
             }
-            if let Err(err) = body.execute(Rc::new(env), &mut std::io::stdout()) {
+            if let Err(err) = body.execute(Rc::new(env), locals, &mut std::io::stdout()) {
                 if let LoxError::Return(r) = err {
                     return Ok(r.val);
                 }

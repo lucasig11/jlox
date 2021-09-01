@@ -24,8 +24,8 @@ mod builtins {
         values::{LoxCallable, LoxValue},
         Environment,
     };
-    use crate::error::LoxResult;
-    use std::{rc::Rc, time::UNIX_EPOCH};
+    use crate::{error::LoxResult, lib::parser::Expr};
+    use std::{collections::HashMap, rc::Rc, time::UNIX_EPOCH};
 
     #[derive(new)]
     pub struct Clock;
@@ -35,7 +35,12 @@ mod builtins {
 
     /// Gets the system time as a unix timestamp and return it as a [`LoxValue::Decimal`].
     impl LoxCallable for Clock {
-        fn call(&self, _: Rc<Environment>, _: &[LoxValue]) -> LoxResult<LoxValue> {
+        fn call(
+            &self,
+            _: Rc<Environment>,
+            _: &HashMap<Expr, usize>,
+            _: &[LoxValue],
+        ) -> LoxResult<LoxValue> {
             Ok(LoxValue::Decimal(
                 std::time::SystemTime::now()
                     .duration_since(UNIX_EPOCH)?
@@ -46,7 +51,13 @@ mod builtins {
 
     /// Reads a line from stdin, returning it as a [`LoxValue::String`]
     impl LoxCallable for Read {
-        fn call(&self, _: Rc<Environment>, _: &[LoxValue]) -> LoxResult<LoxValue> {
+        fn call(
+            &self,
+            _: Rc<Environment>,
+
+            _: &HashMap<Expr, usize>,
+            _: &[LoxValue],
+        ) -> LoxResult<LoxValue> {
             let mut buf = String::new();
             std::io::stdin().read_line(&mut buf)?;
             Ok(LoxValue::String(buf))
@@ -86,15 +97,22 @@ impl Interpreter {
     /// Executes a list of statements.
     pub fn interpret(&self) -> Result<(), Vec<LoxError>> {
         let mut errors = Vec::new();
-        let env = Rc::new(Environment::from(self.globals.clone()));
+        //let env = Rc::new(Environment::from(self.globals.clone()));
+
         for stmt in &self.statements {
-            if let Err(e) = stmt.execute(env.clone(), &mut std::io::stdout()) {
+            if let Err(e) = stmt.execute(
+                self.globals.clone(),
+                &*self.locals.borrow(),
+                &mut std::io::stdout(),
+            ) {
                 errors.push(e);
             };
         }
+
         if !errors.is_empty() {
             return Err(errors);
         }
+
         Ok(())
     }
 }
