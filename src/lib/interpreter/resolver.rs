@@ -11,6 +11,11 @@ use crate::{
     },
 };
 
+#[derive(Clone)]
+enum FunctionType {
+    Function,
+}
+
 pub(crate) trait Resolvable {
     fn resolve(&self, resolver: &Resolver) -> LoxResult<()>;
 }
@@ -33,7 +38,7 @@ impl Resolvable for Stmt {
             Stmt::Function(ref name, _, _) => {
                 resolver.declare(name);
                 resolver.define(name);
-                resolver.resolve_func(self)?;
+                resolver.resolve_func(self, FunctionType::Function)?;
             }
             Stmt::Expression(expr) => {
                 resolver.resolve(expr)?;
@@ -48,7 +53,12 @@ impl Resolvable for Stmt {
             Stmt::Print(expr) => {
                 resolver.resolve(expr)?;
             }
-            Stmt::Return(_, val) => {
+            Stmt::Return(tk, val) => {
+                if resolver.current_function.borrow().is_none() {
+                    return Err(
+                        InnerError::new(*tk.span(), "cannot return from top-level code").into(),
+                    );
+                }
                 if !val.is_nil_expr() {
                     resolver.resolve(val)?;
                 }
@@ -111,9 +121,11 @@ impl<T: Resolvable> Resolvable for Vec<T> {
 
 type Scope = HashMap<String, bool>;
 
+#[derive(Clone)]
 pub(crate) struct Resolver<'i> {
     interpreter: &'i Interpreter,
     scopes: RefCell<Vec<Scope>>,
+    current_function: RefCell<Option<FunctionType>>,
 }
 
 impl<'i> Resolver<'i> {
@@ -121,6 +133,7 @@ impl<'i> Resolver<'i> {
         Self {
             interpreter,
             scopes: Default::default(),
+            current_function: Default::default(),
         }
     }
 
@@ -130,17 +143,19 @@ impl<'i> Resolver<'i> {
 
     fn resolve_local(&self, expr: &Expr, name: &Token) -> LoxResult<()> {
         let scopes = self.scopes.borrow();
-        for (idx, scope) in scopes.iter().rev().enumerate() {
+        for (idx, scope) in scopes.iter().enumerate().rev() {
             if scope.contains_key(&name.to_string()) {
-                self.interpreter
-                    .resolve(expr, scopes.len() - (scopes.len() - idx))?;
+                self.interpreter.resolve(expr, scopes.len() - idx - 1)?;
                 return Ok(());
             }
         }
         Ok(())
     }
 
-    fn resolve_func(&self, stmt: &Stmt) -> LoxResult<()> {
+    fn resolve_func(&self, stmt: &Stmt, func_type: FunctionType) -> LoxResult<()> {
+        let enclosing_function = self.current_function.borrow().clone();
+        *self.current_function.borrow_mut() = Some(func_type);
+
         self.begin_scope();
         if let Stmt::Function(_, params, body) = stmt {
             for param in params {
@@ -150,6 +165,7 @@ impl<'i> Resolver<'i> {
             self.resolve(&**body)?;
         }
         self.end_scope();
+        *self.current_function.borrow_mut() = enclosing_function;
         Ok(())
     }
 
