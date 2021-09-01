@@ -1,36 +1,3 @@
-print "Hello, world";
-print 1.0 >= 3;
-print "20" + 21;
-
-let a = 2;
-let b = 3;
-print a + b;
-
-let foo;
-foo = "bar";
-print "foo is: " + foo;
-
-
-let a = "global a";
-let b = "global b";
-let c = "global c";
-{
-	let a = "outer a";
-	let b = "outer b";
-	{
-		let a = "inner a";
-		print a;
-		print b;
-		print c;
-	}
-	print a;
-	print b;
-	print c;
-}
-print a;
-print b;
-print c;
-
 
 // Functions
 fn fib(n) {
@@ -41,7 +8,7 @@ fn fib(n) {
 }
 
 // For loop
-for (let i = 0; i < 3; i = i + 1) {
+for (let i = 0; i < 8; i = i + 1) {
   print fib(i);
 }
 
@@ -71,4 +38,5 @@ let a = "global";
   showA();
   let a = "block";
   showA();
+  print a;
 }
