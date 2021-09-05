@@ -1,9 +1,8 @@
-use crate::{
-    error::{InterpreterError, LoxResult},
-    lib::interpreter::Resolver,
-};
+use error::{InterpreterError, LoxResult};
+use interpreter::Resolver;
 use std::{io::Write, path::PathBuf};
 
+mod error;
 mod interpreter;
 mod lexer;
 pub(crate) mod parser;

@@ -1,10 +1,8 @@
-use crate::{
+use crate::lib::{
     error::*,
-    lib::{
-        interpreter::{Environment, LoxValue},
-        position::Span,
-        token::{Keyword, Punctuator, Token, TokenKind},
-    },
+    interpreter::{Environment, LoxValue},
+    position::Span,
+    token::{Keyword, Punctuator, Token, TokenKind},
 };
 use std::{collections::HashMap, convert::TryInto, rc::Rc};
 

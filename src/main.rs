@@ -1,11 +1,7 @@
+mod lib;
+use lib::Lox;
 use std::path::PathBuf;
 use structopt::StructOpt;
-
-pub(crate) mod error;
-mod lib;
-
-#[macro_use]
-extern crate derive_new;
 
 #[derive(StructOpt)]
 struct Options {
@@ -16,8 +12,8 @@ struct Options {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Options::from_args();
     if let Err(e) = match opt.file {
-        Some(path) => lib::Lox::do_file(path),
-        None => lib::Lox::do_repl(),
+        Some(path) => Lox::do_file(path),
+        None => Lox::do_repl(),
     } {
         eprintln!("{}", e);
     }

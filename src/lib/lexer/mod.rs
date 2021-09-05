@@ -1,7 +1,7 @@
 pub(crate) mod token;
 
-use crate::error::InnerError;
 use crate::lib::{
+    error::InnerError,
     position::{Cursor, Position, Span},
     LoxResult,
 };

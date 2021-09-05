@@ -1,12 +1,10 @@
 use std::{collections::HashMap, io::Write, rc::Rc};
 
-use crate::{
+use crate::lib::{
     error::*,
-    lib::{
-        interpreter::{Environment, LoxClass, LoxFunction, LoxValue},
-        position::Span,
-        token::Token,
-    },
+    interpreter::{Environment, LoxClass, LoxFunction, LoxValue},
+    position::Span,
+    token::Token,
 };
 
 use super::Expr;

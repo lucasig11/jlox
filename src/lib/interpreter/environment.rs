@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::error::{LoxError, LoxResult};
+use crate::lib::error::{LoxError, LoxResult};
 
 use super::LoxValue;
 

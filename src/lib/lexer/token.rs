@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{error::LoxError, lib::position::Span};
+use crate::lib::{error::LoxError, position::Span};
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct Token {

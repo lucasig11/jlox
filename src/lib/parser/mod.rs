@@ -68,8 +68,10 @@
 //!
 pub(crate) mod expression;
 pub(crate) mod statements;
-use super::token::{Keyword, Punctuator, Token, TokenKind};
-use crate::error::{InnerError, LoxError, LoxResult};
+use super::{
+    error::{InnerError, LoxError, LoxResult},
+    token::{Keyword, Punctuator, Token, TokenKind},
+};
 pub(crate) use expression::Expr;
 pub(crate) use statements::Stmt;
 use Keyword::*;
@@ -538,7 +540,7 @@ impl<'a> Parser<'a> {
         matches!(self.inner.peek(), Some(e) if e.kind() == &kind.into())
     }
 
-    /// Consumes the next token if its kind is `T`, otherwise return a [LoxError](crate::error::LoxError::Inner) with `msg`
+    /// Consumes the next token if its kind is `T`, otherwise return a [LoxError](super::error::LoxError::Inner) with `msg`
     fn consume<T: Into<TokenKind>>(&self, kind: T, msg: &str) -> LoxResult<&Token> {
         if self.check(kind) {
             // Unwrapping here is safe bc `self.check` returned true, so we know there's a next

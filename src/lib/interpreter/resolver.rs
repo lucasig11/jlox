@@ -1,14 +1,12 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::{
+use crate::lib::{
     error::InnerError,
-    lib::{
-        interpreter::Interpreter,
-        parser::{Expr, Stmt},
-        token::Token,
-        LoxResult,
-    },
+    interpreter::Interpreter,
+    parser::{Expr, Stmt},
+    token::Token,
+    LoxResult,
 };
 
 #[derive(Clone)]

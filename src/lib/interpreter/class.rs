@@ -1,9 +1,7 @@
-use crate::{
+use crate::lib::{
     error::LoxResult,
-    lib::{
-        interpreter::{values::LoxCallable, Environment, LoxValue},
-        parser::Expr,
-    },
+    interpreter::{values::LoxCallable, Environment, LoxValue},
+    parser::Expr,
 };
 use std::{
     collections::HashMap,

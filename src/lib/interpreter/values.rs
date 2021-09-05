@@ -1,14 +1,17 @@
-use crate::error::{LoxError, LoxResult};
-use crate::lib::parser::Expr;
-use crate::lib::token::{Keyword, Numeric, TokenKind};
-use std::cmp::PartialEq;
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::ops::{Add, Div, Mul, Neg, Sub};
-use std::rc::Rc;
+use crate::lib::{
+    error::{LoxError, LoxResult},
+    parser::Expr,
+    token::{Keyword, Numeric, TokenKind},
+};
+use std::{
+    cmp::PartialEq,
+    collections::HashMap,
+    convert::TryFrom,
+    ops::{Add, Div, Mul, Neg, Sub},
+    rc::Rc,
+};
 
-use super::class::LoxInstance;
-use super::Environment;
+use super::{class::LoxInstance, Environment};
 
 /// Internal language types
 #[derive(Clone)]

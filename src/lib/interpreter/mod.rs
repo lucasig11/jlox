@@ -1,9 +1,7 @@
-use crate::{
+use crate::lib::{
     error::LoxError,
-    lib::{
-        parser::{Expr, Stmt},
-        LoxResult,
-    },
+    parser::{Expr, Stmt},
+    LoxResult,
 };
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -25,7 +23,8 @@ mod builtins {
         values::{LoxCallable, LoxValue},
         Environment,
     };
-    use crate::{error::LoxResult, lib::parser::Expr};
+    use crate::lib::{error::LoxResult, parser::Expr};
+    use derive_new::*;
     use std::{collections::HashMap, rc::Rc, time::UNIX_EPOCH};
 
     #[derive(new)]
