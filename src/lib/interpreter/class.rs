@@ -28,8 +28,8 @@ impl LoxClass {
     }
 
     pub fn find_method(&self, name: &str) -> Option<LoxValue> {
-        dbg!(&self.methods)
-            .get(dbg!(name))
+        self.methods
+            .get(name)
             .map(|f| LoxValue::Callable(Rc::new(f.clone())))
     }
 }
@@ -69,7 +69,7 @@ impl LoxInstance {
         fields
             .get(&name.to_string())
             .cloned()
-            .or_else(|| dbg!(self.class.find_method(&name.to_string())))
+            .or_else(|| self.class.find_method(&name.to_string()))
             .ok_or_else(|| {
                 InnerError::new(*name.span(), &format!("undefined property `{}`", name)).into()
             })
