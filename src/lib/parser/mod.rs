@@ -373,14 +373,12 @@ impl<'a> Parser<'a> {
         let expr = self.or()?;
 
         if self.matches(Punctuator::Assign) {
-            // Unwrapping here is safe bc if there wasn't a previous token, an error would've been
-            // thrown already by `self.equality`.
-            let eq_sign = self.inner.previous().unwrap();
             let val = self.assignment()?;
-            if let Expr::Variable(name) = expr {
-                return Ok(Expr::Assign(name, val.into()));
-            }
-            return Err(InnerError::new(*eq_sign.span(), "invalid assigment target").into());
+            return match expr {
+                Expr::Variable(name) => Ok(Expr::Assign(name, val.into())),
+                Expr::Get(object, name) => Ok(Expr::Set(object, name, val.into())),
+                _ => Err(InnerError::new(expr.position(), "invalid assigment target").into()),
+            };
         }
         Ok(expr)
     }
@@ -456,6 +454,9 @@ impl<'a> Parser<'a> {
         loop {
             if self.matches(Punctuator::OpenParen) {
                 expr = self.finish_call(expr)?;
+            } else if self.matches(Punctuator::Dot) {
+                let name = self.consume_ident("expected property name after `.`")?;
+                expr = Expr::Get(Box::new(expr), name.to_owned());
             } else {
                 break;
             }

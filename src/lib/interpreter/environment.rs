@@ -8,6 +8,7 @@ use super::LoxValue;
 ///
 /// A local environment is created from, and keeps a reference to, it's parent (enclosing)
 /// environment. The global one has no enclosing env.
+#[derive(Debug)]
 pub(crate) struct Environment {
     values: RefCell<HashMap<Box<str>, LoxValue>>,
     enclosing: Option<Rc<Environment>>,

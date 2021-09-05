@@ -145,8 +145,24 @@ impl Expr {
                 }
                 Err(InnerError::new(*pos, "can only call functions or class constructors").into())
             }
-            Expr::Get(_, _) => todo!(),
-            Expr::Set(_, _, _) => todo!(),
+            Expr::Get(object, name) => {
+                let object = object.evaluate(env, locals)?;
+                if let LoxValue::Instance(i) = object {
+                    return i.get(name);
+                }
+                Err(InnerError::new(*pos, "only instances have properties").into())
+            }
+            Expr::Set(object, name, value) => {
+                let var = &*object.to_string();
+                let object = object.evaluate(Rc::clone(&env), locals)?;
+                if let LoxValue::Instance(ref i) = object {
+                    let value = value.evaluate(env.clone(), locals)?;
+                    i.set(name, &value)?;
+                    // reassign to env because we are cloners and i hate myself
+                    return env.assign(var, &object);
+                }
+                Err(InnerError::new(*pos, "only instances have fields").into())
+            }
             Expr::Super(_, _) => todo!(),
             Expr::This(_) => todo!(),
         }
@@ -187,6 +203,7 @@ impl std::fmt::Display for Expr {
             Expr::Assign(tk, expr) => write!(f, "({} {})", tk, *expr),
             Expr::Grouping(expr) => write!(f, "(group {})", *expr),
             Expr::Literal(tk) => write!(f, "{}", tk),
+            Expr::Variable(tk) => write!(f, "{}", tk),
             _ => unimplemented!(),
         }
     }

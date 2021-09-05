@@ -102,8 +102,13 @@ impl Resolvable for Expr {
                 resolver.resolve(&**rhs)?;
             }
 
-            Expr::Get(_, _) => todo!(),
-            Expr::Set(_, _, _) => todo!(),
+            Expr::Get(object, _) => {
+                resolver.resolve(&**object)?;
+            }
+            Expr::Set(object, _, value) => {
+                resolver.resolve(&**value)?;
+                resolver.resolve(&**object)?;
+            }
             Expr::Super(_, _) => todo!(),
             Expr::This(_) => todo!(),
         }

@@ -1,3 +1,4 @@
+#![feature(result_cloned)]
 mod lib;
 use lib::Lox;
 use std::path::PathBuf;
