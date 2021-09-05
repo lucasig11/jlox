@@ -9,8 +9,9 @@ use crate::lib::{
     LoxResult,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 enum FunctionType {
+    Method,
     Function,
 }
 
@@ -65,9 +66,13 @@ impl Resolvable for Stmt {
                 resolver.resolve(condition)?;
                 resolver.resolve(&**body)?;
             }
-            Stmt::Class(name, _, _) => {
+            Stmt::Class(name, _, methods) => {
                 resolver.declare(name);
                 resolver.define(name);
+                for method in &*methods {
+                    let declaration = FunctionType::Method;
+                    resolver.resolve_func(method, declaration)?;
+                }
             }
         }
 
@@ -159,7 +164,7 @@ impl<'i> Resolver<'i> {
     }
 
     fn resolve_func(&self, stmt: &Stmt, func_type: FunctionType) -> LoxResult<()> {
-        let enclosing_function = self.current_function.borrow().clone();
+        let enclosing_function = *self.current_function.borrow();
         *self.current_function.borrow_mut() = Some(func_type);
 
         self.begin_scope();

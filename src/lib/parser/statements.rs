@@ -88,10 +88,18 @@ impl Stmt {
                 )
                 .into());
             }
-            Stmt::Class(name, _, _) => {
+            Stmt::Class(name, _, methods) => {
                 let name = name.to_string();
                 env.define(&name, LoxValue::Nil);
-                let class = LoxClass::new(&name);
+                let methods = methods
+                    .iter()
+                    .map(|el| {
+                        let func = LoxFunction::new(el.to_owned(), Rc::clone(&env))?;
+                        Ok((el.to_string(), func))
+                    })
+                    .collect::<LoxResult<HashMap<_, _>>>()?;
+
+                let class = LoxClass::new(&name, methods);
                 env.assign(&name, &LoxValue::Callable(Rc::new(class)))?;
             }
         };
@@ -124,15 +132,15 @@ impl std::fmt::Display for Stmt {
             f,
             "{}",
             match &self {
-                Stmt::Expression(_) => "expression",
-                Stmt::Print(_) => "print",
-                Stmt::Return(_, _) => "return",
-                Stmt::If(_, _, _) => "if",
-                Stmt::Function(_, _, _) => "function",
-                Stmt::Class(_, _, _) => "class",
-                Stmt::Variable(_, _) => "variable",
-                Stmt::While(_, _) => "while",
-                Stmt::Block(_) => "block",
+                Stmt::Expression(_) => "expression".to_string(),
+                Stmt::Print(_) => "print".to_string(),
+                Stmt::Return(_, _) => "return".to_string(),
+                Stmt::If(_, _, _) => "if".to_string(),
+                Stmt::Function(name, _, _) => name.to_string(),
+                Stmt::Class(_, _, _) => "class".to_string(),
+                Stmt::Variable(name, _) => name.to_string(),
+                Stmt::While(_, _) => "while".to_string(),
+                Stmt::Block(_) => "block".to_string(),
             }
         )
     }

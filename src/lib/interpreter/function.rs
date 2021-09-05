@@ -5,6 +5,7 @@ use crate::lib::{
 };
 use std::{collections::HashMap, rc::Rc};
 
+#[derive(Debug, Clone)]
 pub(crate) struct LoxFunction {
     declaration: Stmt,
     arity: usize,

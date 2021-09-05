@@ -11,16 +11,26 @@ use std::{
     rc::Rc,
 };
 
+use super::LoxFunction;
+
 #[derive(Clone, Debug)]
 pub(crate) struct LoxClass {
     name: String,
+    methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, methods: HashMap<String, LoxFunction>) -> Self {
         Self {
+            methods,
             name: name.to_string(),
         }
+    }
+
+    pub fn find_method(&self, name: &str) -> Option<LoxValue> {
+        dbg!(&self.methods)
+            .get(dbg!(name))
+            .map(|f| LoxValue::Callable(Rc::new(f.clone())))
     }
 }
 
@@ -58,10 +68,11 @@ impl LoxInstance {
         let fields = self.fields.borrow();
         fields
             .get(&name.to_string())
+            .cloned()
+            .or_else(|| dbg!(self.class.find_method(&name.to_string())))
             .ok_or_else(|| {
                 InnerError::new(*name.span(), &format!("undefined property `{}`", name)).into()
             })
-            .cloned()
     }
 
     pub fn set(&self, name: &Token, val: &LoxValue) -> LoxResult<()> {
