@@ -15,6 +15,11 @@ enum FunctionType {
     Function,
 }
 
+#[derive(Clone, Copy)]
+enum ClassType {
+    Class,
+}
+
 pub(crate) trait Resolvable {
     fn resolve(&self, resolver: &Resolver) -> LoxResult<()>;
 }
@@ -67,6 +72,9 @@ impl Resolvable for Stmt {
                 resolver.resolve(&**body)?;
             }
             Stmt::Class(name, _, methods) => {
+                let enclosing_class = *resolver.current_class.borrow();
+                *resolver.current_class.borrow_mut() = Some(ClassType::Class);
+
                 resolver.declare(name);
                 resolver.define(name);
                 resolver.begin_scope();
@@ -76,6 +84,7 @@ impl Resolvable for Stmt {
                     resolver.resolve_func(method, declaration)?;
                 }
                 resolver.end_scope();
+                *resolver.current_class.borrow_mut() = enclosing_class;
             }
         }
 
@@ -117,7 +126,16 @@ impl Resolvable for Expr {
                 resolver.resolve(&**value)?;
                 resolver.resolve(&**object)?;
             }
-            Expr::This(ref keyword) => resolver.resolve_local(self, keyword)?,
+            Expr::This(ref keyword) => {
+                if resolver.current_class.borrow().is_none() {
+                    return Err(InnerError::new(
+                        *keyword.span(),
+                        "cannot use `this` outside of a class",
+                    )
+                    .into());
+                }
+                resolver.resolve_local(self, keyword)?
+            }
             Expr::Super(_, _) => todo!(),
         }
         Ok(())
@@ -140,6 +158,7 @@ pub(crate) struct Resolver<'i> {
     interpreter: &'i Interpreter,
     scopes: RefCell<Vec<Scope>>,
     current_function: RefCell<Option<FunctionType>>,
+    current_class: RefCell<Option<ClassType>>,
 }
 
 impl<'i> Resolver<'i> {
@@ -148,6 +167,7 @@ impl<'i> Resolver<'i> {
             interpreter,
             scopes: Default::default(),
             current_function: Default::default(),
+            current_class: Default::default(),
         }
     }
 
