@@ -68,7 +68,7 @@ impl Expr {
             }
 
             Expr::Binary(lhs, op, rhs) => {
-                let lhs = lhs.evaluate(env.clone(), locals)?;
+                let lhs = lhs.evaluate(Rc::clone(&env), locals)?;
                 let rhs = rhs.evaluate(env, locals)?;
                 use Punctuator::*;
                 let result = match *op.kind() {
@@ -92,7 +92,7 @@ impl Expr {
             }
 
             Expr::Logical(lhs, op, rhs) => {
-                let lhs = lhs.evaluate(env.clone(), locals)?;
+                let lhs = lhs.evaluate(Rc::clone(&env), locals)?;
 
                 if let TokenKind::Keyword(Keyword::Or) = *op.kind() {
                     if lhs.is_truthy() {
@@ -113,7 +113,7 @@ impl Expr {
                     .map_err(|e| InnerError::new(*pos, &e.to_string()).into())
             }
             Expr::Assign(name, val) => {
-                let val = val.evaluate(env.clone(), locals)?;
+                let val = val.evaluate(Rc::clone(&env), locals)?;
 
                 if let Some(idx) = locals.get(self) {
                     env.assign_at(*idx, &name.to_string(), &val)?;
@@ -127,10 +127,10 @@ impl Expr {
             }
 
             Expr::Call(callee, _, args) => {
-                let callee = callee.evaluate(env.clone(), locals)?;
+                let callee = callee.evaluate(Rc::clone(&env), locals)?;
                 let args: Vec<_> = args
                     .iter()
-                    .map(|arg| arg.evaluate(env.clone(), locals))
+                    .map(|arg| arg.evaluate(Rc::clone(&env), locals))
                     .collect::<LoxResult<_>>()?;
 
                 if let LoxValue::Callable(c) = callee {
