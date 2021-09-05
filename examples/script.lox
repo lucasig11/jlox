@@ -40,3 +40,14 @@ let a = "global";
   showA();
   print a;
 }
+
+// Class
+
+class Bacon {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
+}
+
+Bacon().eat(); 
+
