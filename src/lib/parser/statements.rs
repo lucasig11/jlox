@@ -3,13 +3,11 @@ use std::{collections::HashMap, io::Write, rc::Rc};
 use crate::{
     error::*,
     lib::{
-        interpreter::{Environment, LoxFunction, LoxValue},
+        interpreter::{Environment, LoxClass, LoxFunction, LoxValue},
         position::Span,
         token::Token,
     },
 };
-
-use self::class::LoxClass;
 
 use super::Expr;
 
@@ -100,44 +98,6 @@ impl Stmt {
             }
         };
         Ok(())
-    }
-}
-
-pub(crate) mod class {
-    use crate::{
-        error::LoxResult,
-        lib::{
-            interpreter::{values::LoxCallable, Environment, LoxValue},
-            parser::Expr,
-        },
-    };
-    use std::{collections::HashMap, rc::Rc};
-
-    pub(crate) struct LoxClass {
-        name: String,
-    }
-
-    impl LoxClass {
-        pub fn new(name: &str) -> Self {
-            Self {
-                name: name.to_string(),
-            }
-        }
-    }
-
-    impl LoxCallable for LoxClass {
-        fn call(
-            &self,
-            env: Rc<Environment>,
-            locals: &HashMap<Expr, usize>,
-            args: &[LoxValue],
-        ) -> LoxResult<LoxValue> {
-            todo!("class constructor")
-        }
-
-        fn to_string(&self) -> String {
-            self.name.clone()
-        }
     }
 }
 

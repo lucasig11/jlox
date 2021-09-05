@@ -8,12 +8,13 @@ use crate::{
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-pub(crate) use self::{function::LoxFunction, values::LoxValue};
+pub(crate) use self::{class::LoxClass, function::LoxFunction, values::LoxValue};
 pub(crate) use environment::Environment;
 pub(crate) use resolver::Resolver;
 
 #[macro_use]
 pub(crate) mod util;
+pub(crate) mod class;
 mod environment;
 mod function;
 mod resolver;

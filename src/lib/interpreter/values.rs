@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 use std::rc::Rc;
 
+use super::class::LoxInstance;
 use super::Environment;
 
 /// Internal language types
@@ -18,6 +19,7 @@ pub(crate) enum LoxValue {
     Integer(isize),
     Boolean(bool),
     Callable(Rc<dyn LoxCallable>),
+    Instance(LoxInstance),
 }
 
 pub(crate) trait LoxCallable {
@@ -116,6 +118,9 @@ impl std::fmt::Display for LoxValue {
             LoxValue::String(s) => write!(f, "{}", s),
             LoxValue::Callable(callable) => write!(f, "{}", callable.to_string()),
             LoxValue::Nil => write!(f, "nil"),
+            LoxValue::Instance(instance) => {
+                write!(f, "{}", instance)
+            }
         }
     }
 }
@@ -128,6 +133,9 @@ impl std::fmt::Debug for LoxValue {
             LoxValue::String(s) => write!(f, "{}", s),
             LoxValue::Callable(callable) => write!(f, "{}", callable.to_string()),
             LoxValue::Nil => write!(f, "nil"),
+            LoxValue::Instance(instance) => {
+                write!(f, "{}", instance)
+            }
         }
     }
 }
