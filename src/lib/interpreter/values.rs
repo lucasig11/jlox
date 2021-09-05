@@ -208,22 +208,6 @@ impl Neg for LoxValue {
     }
 }
 
-// Returns true if all the values match the pattern
-macro_rules! multi_matches {
-    ($expression:pat, $($val:expr),+) => {
-        {
-            let mut ret = true;
-            $(ret &= matches!($val, $expression);)+
-            ret
-        }
-    }
-}
-
-// Nil, Nil => true
-// String, String => cmp.string,
-// Int, int = cmp.int,
-// bool, bool, => cmp.bool,
-// _ => false
 impl PartialEq for LoxValue {
     fn eq(&self, oth: &Self) -> bool {
         if multi_matches!(&LoxValue::Nil, &self, &oth) {

@@ -46,3 +46,14 @@ macro_rules! cmpop {
         }
     }
 }
+
+// Returns true if all the values match the pattern
+macro_rules! multi_matches {
+    ($expression:pat, $($val:expr),+) => {
+        {
+            let mut ret = true;
+            $(ret &= matches!($val, $expression);)+
+            ret
+        }
+    }
+}
