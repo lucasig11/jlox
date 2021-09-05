@@ -500,6 +500,7 @@ impl<'a> Parser<'a> {
                 TokenKind::StringLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::NumericLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::Nil) => Expr::Literal(tk.to_owned()),
+                TokenKind::Keyword(Keyword::This) => Expr::This(tk.to_owned()),
                 TokenKind::Identifier(_) => Expr::Variable(tk.to_owned()),
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
                     self.inner.advance();

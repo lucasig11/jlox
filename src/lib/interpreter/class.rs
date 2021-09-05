@@ -27,10 +27,8 @@ impl LoxClass {
         }
     }
 
-    pub fn find_method(&self, name: &str) -> Option<LoxValue> {
-        self.methods
-            .get(name)
-            .map(|f| LoxValue::Callable(Rc::new(f.clone())))
+    pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {
+        self.methods.get(name)
     }
 }
 
@@ -66,13 +64,15 @@ impl LoxInstance {
 
     pub fn get(&self, name: &Token) -> LoxResult<LoxValue> {
         let fields = self.fields.borrow();
-        fields
-            .get(&name.to_string())
-            .cloned()
-            .or_else(|| self.class.find_method(&name.to_string()))
-            .ok_or_else(|| {
-                InnerError::new(*name.span(), &format!("undefined property `{}`", name)).into()
-            })
+        if let Some(prop) = fields.get(&name.to_string()).cloned() {
+            return Ok(prop);
+        }
+
+        if let Some(method) = self.class.find_method(&name.to_string()) {
+            return method.bind(self);
+        }
+
+        Err(InnerError::new(*name.span(), &format!("undefined property `{}`", name)).into())
     }
 
     pub fn set(&self, name: &Token, val: &LoxValue) -> LoxResult<()> {

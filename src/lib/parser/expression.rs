@@ -43,6 +43,16 @@ impl Expr {
         locals: &HashMap<Expr, usize>,
     ) -> LoxResult<LoxValue> {
         let pos = &self.position();
+
+        let var_lookup = |name, expr| {
+            if let Some(idx) = locals.get(expr) {
+                return env.get_at(*idx, name);
+            }
+            env.global()
+                .get(name)
+                .map_err(|e| InnerError::new(*pos, &e.to_string()).into())
+        };
+
         match self {
             Expr::Literal(tk) => tk
                 .kind()
@@ -104,14 +114,7 @@ impl Expr {
 
                 rhs.evaluate(env, locals)
             }
-            Expr::Variable(ref name) => {
-                if let Some(idx) = locals.get(self) {
-                    return env.get_at(*idx, &name.to_string());
-                }
-                env.global()
-                    .get(&name.to_string())
-                    .map_err(|e| InnerError::new(*pos, &e.to_string()).into())
-            }
+            Expr::Variable(ref name) => var_lookup(&name.to_string(), self),
             Expr::Assign(name, val) => {
                 let val = val.evaluate(Rc::clone(&env), locals)?;
 
@@ -164,7 +167,7 @@ impl Expr {
                 Err(InnerError::new(*pos, "only instances have fields").into())
             }
             Expr::Super(_, _) => todo!(),
-            Expr::This(_) => todo!(),
+            Expr::This(kw) => var_lookup(&kw.to_string(), self),
         }
     }
 

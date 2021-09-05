@@ -1,5 +1,5 @@
 use crate::lib::{
-    interpreter::{values::LoxCallable, Environment, LoxError, LoxValue},
+    interpreter::{class::LoxInstance, values::LoxCallable, Environment, LoxError, LoxValue},
     parser::{Expr, Stmt},
     LoxResult,
 };
@@ -27,6 +27,13 @@ impl LoxFunction {
                 declaration
             )))
         }
+    }
+
+    pub fn bind(&self, instance: &LoxInstance) -> LoxResult<LoxValue> {
+        let env = Environment::from(Rc::clone(&self.closure));
+        env.define("this", LoxValue::Instance(instance.to_owned()));
+        let func = LoxFunction::new(self.declaration.clone(), env.into())?;
+        Ok(LoxValue::Callable(Rc::new(func)))
     }
 }
 

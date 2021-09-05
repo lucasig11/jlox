@@ -69,10 +69,13 @@ impl Resolvable for Stmt {
             Stmt::Class(name, _, methods) => {
                 resolver.declare(name);
                 resolver.define(name);
+                resolver.begin_scope();
+                resolver.put(String::from("this"), true);
                 for method in &*methods {
                     let declaration = FunctionType::Method;
                     resolver.resolve_func(method, declaration)?;
                 }
+                resolver.end_scope();
             }
         }
 
@@ -114,8 +117,8 @@ impl Resolvable for Expr {
                 resolver.resolve(&**value)?;
                 resolver.resolve(&**object)?;
             }
+            Expr::This(ref keyword) => resolver.resolve_local(self, keyword)?,
             Expr::Super(_, _) => todo!(),
-            Expr::This(_) => todo!(),
         }
         Ok(())
     }
@@ -213,7 +216,7 @@ impl<'i> Resolver<'i> {
         self.put(name.to_string(), false);
     }
 
-    fn put(&self, name: String, val: bool) {
+    pub fn put(&self, name: String, val: bool) {
         if self.scopes.borrow().is_empty() {
             return;
         }
