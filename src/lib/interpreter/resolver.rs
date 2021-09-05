@@ -67,7 +67,10 @@ impl Resolvable for Stmt {
                 resolver.resolve(condition)?;
                 resolver.resolve(&**body)?;
             }
-            Stmt::Class(_, _, _) => todo!(),
+            Stmt::Class(name, _, _) => {
+                resolver.declare(name);
+                resolver.define(name);
+            }
         }
 
         Ok(())
@@ -82,7 +85,7 @@ impl Resolvable for Expr {
                 resolver.resolve_local(self, name)?;
             }
             Expr::Assign(ref name, ref value) => {
-                value.resolve(resolver)?;
+                resolver.resolve(&**value)?;
                 resolver.resolve_local(self, name)?;
             }
             Expr::Binary(lhs, _, rhs) => {

@@ -104,6 +104,9 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&self) -> LoxResult<Stmt> {
+        if self.matches(Keyword::Class) {
+            return self.class_decl();
+        }
         if self.matches(Keyword::Fn) {
             return self.func_decl("function");
         }
@@ -111,6 +114,32 @@ impl<'a> Parser<'a> {
             return self.var_decl();
         }
         self.statement()
+    }
+
+    /// Parses a class declaration.
+    fn class_decl(&self) -> LoxResult<Stmt> {
+        let name = self.consume_ident("expected name after `class`")?;
+
+        if self.matches(Keyword::Extends) {
+            let _superclass = self.consume_ident("expected superclass name after `extends`")?;
+        }
+
+        self.consume(
+            Punctuator::OpenBlock,
+            "expected block before class declaration",
+        )?;
+
+        let mut methods = Vec::new();
+        while !self.check(Punctuator::CloseBlock) && self.inner.peek().is_some() {
+            methods.push(self.func_decl("method")?);
+        }
+
+        self.consume(
+            Punctuator::CloseBlock,
+            "expected block after class declaration",
+        )?;
+
+        Ok(Stmt::Class(name.clone(), None, methods))
     }
 
     /// Parses a function declaration.

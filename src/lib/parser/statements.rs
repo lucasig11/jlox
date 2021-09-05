@@ -9,6 +9,8 @@ use crate::{
     },
 };
 
+use self::class::LoxClass;
+
 use super::Expr;
 
 #[allow(dead_code)]
@@ -25,7 +27,7 @@ pub(crate) enum Stmt {
     /// Function statement(name, params, body)
     Function(Token, Vec<Token>, Box<Stmt>),
     /// Class statement(name, superclass: Expr::Variable, methods: Vec<Stmt::Function>)
-    Class(Token, Expr, Vec<Stmt>),
+    Class(Token, Option<Expr>, Vec<Stmt>),
     /// Variable statement(name, initializer)
     Variable(Token, Expr),
     /// While statement(condition, body)
@@ -90,9 +92,52 @@ impl Stmt {
                 )
                 .into());
             }
-            Stmt::Class(_, _, _) => todo!(),
+            Stmt::Class(name, _, _) => {
+                let name = name.to_string();
+                env.define(&name, LoxValue::Nil);
+                let class = LoxClass::new(&name);
+                env.assign(&name, &LoxValue::Callable(Rc::new(class)))?;
+            }
         };
         Ok(())
+    }
+}
+
+pub(crate) mod class {
+    use crate::{
+        error::LoxResult,
+        lib::{
+            interpreter::{values::LoxCallable, Environment, LoxValue},
+            parser::Expr,
+        },
+    };
+    use std::{collections::HashMap, rc::Rc};
+
+    pub(crate) struct LoxClass {
+        name: String,
+    }
+
+    impl LoxClass {
+        pub fn new(name: &str) -> Self {
+            Self {
+                name: name.to_string(),
+            }
+        }
+    }
+
+    impl LoxCallable for LoxClass {
+        fn call(
+            &self,
+            env: Rc<Environment>,
+            locals: &HashMap<Expr, usize>,
+            args: &[LoxValue],
+        ) -> LoxResult<LoxValue> {
+            todo!("class constructor")
+        }
+
+        fn to_string(&self) -> String {
+            self.name.clone()
+        }
     }
 }
 
