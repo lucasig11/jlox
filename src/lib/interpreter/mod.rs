@@ -54,7 +54,6 @@ mod builtins {
         fn call(
             &self,
             _: Rc<Environment>,
-
             _: &HashMap<Expr, usize>,
             _: &[LoxValue],
         ) -> LoxResult<LoxValue> {
