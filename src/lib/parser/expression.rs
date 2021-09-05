@@ -156,18 +156,21 @@ impl Expr {
                 Err(InnerError::new(*pos, "only instances have properties").into())
             }
             Expr::Set(object, name, value) => {
-                let var = &*object.to_string();
+                let var = match &**object {
+                    // Expr::This(_) => "cake".to_string(),
+                    _ => object.to_string(),
+                };
                 let object = object.evaluate(Rc::clone(&env), locals)?;
                 if let LoxValue::Instance(ref i) = object {
-                    let value = value.evaluate(env.clone(), locals)?;
+                    let value = value.evaluate(Rc::clone(&env), locals)?;
                     i.set(name, &value)?;
-                    // reassign to env because we are cloners and i hate myself
-                    return env.assign(var, &object);
+                    // dbg!(&object, &name, &value);
+                    return env.assign(&var, &object);
                 }
                 Err(InnerError::new(*pos, "only instances have fields").into())
             }
-            Expr::Super(_, _) => todo!(),
             Expr::This(kw) => var_lookup(&kw.to_string(), self),
+            Expr::Super(_, _) => todo!(),
         }
     }
 

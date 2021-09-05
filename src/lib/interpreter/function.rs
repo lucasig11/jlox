@@ -10,16 +10,22 @@ pub(crate) struct LoxFunction {
     declaration: Stmt,
     arity: usize,
     closure: Rc<Environment>,
+    is_initializer: bool,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Stmt, closure: Rc<Environment>) -> LoxResult<Self> {
+    pub fn new(
+        declaration: Stmt,
+        closure: Rc<Environment>,
+        is_initializer: bool,
+    ) -> LoxResult<Self> {
         if let Stmt::Function(_, ref params, _) = declaration {
             let arity = params.len();
             Ok(Self {
                 declaration,
                 arity,
                 closure,
+                is_initializer,
             })
         } else {
             Err(LoxError::Generic(format!(
@@ -29,11 +35,14 @@ impl LoxFunction {
         }
     }
 
-    pub fn bind(&self, instance: &LoxInstance) -> LoxResult<LoxValue> {
+    pub fn bind(&self, instance: &LoxInstance) -> LoxResult<LoxFunction> {
         let env = Environment::from(Rc::clone(&self.closure));
         env.define("this", LoxValue::Instance(instance.to_owned()));
-        let func = LoxFunction::new(self.declaration.clone(), env.into())?;
-        Ok(LoxValue::Callable(Rc::new(func)))
+        LoxFunction::new(self.declaration.clone(), env.into(), self.is_initializer)
+    }
+
+    pub fn is_initializer(&self) -> bool {
+        self.is_initializer
     }
 }
 
@@ -50,11 +59,16 @@ impl LoxCallable for LoxFunction {
                 env.define(&ident.to_string(), val.to_owned())
             }
             if let Err(err) = body.execute(Rc::new(env), locals, &mut std::io::stdout()) {
+                // Capture the return value that is unwinding the call stack
                 if let LoxError::Return(r) = err {
                     return Ok(r.val);
                 }
                 return Err(err);
             }
+        }
+
+        if self.is_initializer() {
+            return self.closure.get_at(0, "this");
         }
 
         Ok(LoxValue::Nil)

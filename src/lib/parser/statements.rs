@@ -75,7 +75,7 @@ impl Stmt {
                 }
             }
             Stmt::Function(name, _, _) => {
-                let function = LoxFunction::new(self.to_owned(), env.clone())?;
+                let function = LoxFunction::new(self.to_owned(), env.clone(), false)?;
                 env.define(
                     &name.to_string(),
                     LoxValue::Callable(std::rc::Rc::new(function)),
@@ -94,7 +94,11 @@ impl Stmt {
                 let methods = methods
                     .iter()
                     .map(|el| {
-                        let func = LoxFunction::new(el.to_owned(), Rc::clone(&env))?;
+                        let func = LoxFunction::new(
+                            el.to_owned(),
+                            Rc::clone(&env),
+                            el.to_string().eq("init"),
+                        )?;
                         Ok((el.to_string(), func))
                     })
                     .collect::<LoxResult<HashMap<_, _>>>()?;

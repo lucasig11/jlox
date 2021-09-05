@@ -35,16 +35,29 @@ impl LoxClass {
 impl LoxCallable for LoxClass {
     fn call(
         &self,
-        _: Rc<Environment>,
-        _: &HashMap<Expr, usize>,
-        _: &[LoxValue],
+        env: Rc<Environment>,
+        locals: &HashMap<Expr, usize>,
+        args: &[LoxValue],
     ) -> LoxResult<LoxValue> {
         let instance = LoxInstance::new(self.clone());
+        if let Some(constructor) = self.find_method("init") {
+            constructor
+                .bind(&instance)?
+                .call(Rc::clone(&env), locals, args)?;
+        }
+
         Ok(LoxValue::Instance(instance))
     }
 
     fn to_string(&self) -> String {
         self.name.clone()
+    }
+
+    fn arity(&self) -> usize {
+        if let Some(constructor) = self.find_method("init") {
+            return constructor.arity();
+        }
+        0
     }
 }
 
@@ -69,7 +82,7 @@ impl LoxInstance {
         }
 
         if let Some(method) = self.class.find_method(&name.to_string()) {
-            return method.bind(self);
+            return Ok(LoxValue::Callable(Rc::new(method.bind(self)?)));
         }
 
         Err(InnerError::new(*name.span(), &format!("undefined property `{}`", name)).into())
