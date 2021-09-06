@@ -39,13 +39,13 @@ mod builtins {
             &self,
             _: Rc<Environment>,
             _: &HashMap<Expr, usize>,
-            _: &[LoxValue],
-        ) -> LoxResult<LoxValue> {
-            Ok(LoxValue::Decimal(
+            _: &[Rc<LoxValue>],
+        ) -> LoxResult<Rc<LoxValue>> {
+            Ok(Rc::new(LoxValue::Decimal(
                 std::time::SystemTime::now()
                     .duration_since(UNIX_EPOCH)?
                     .as_millis() as f64,
-            ))
+            )))
         }
     }
 
@@ -55,11 +55,11 @@ mod builtins {
             &self,
             _: Rc<Environment>,
             _: &HashMap<Expr, usize>,
-            _: &[LoxValue],
-        ) -> LoxResult<LoxValue> {
+            _: &[Rc<LoxValue>],
+        ) -> LoxResult<Rc<LoxValue>> {
             let mut buf = String::new();
             std::io::stdin().read_line(&mut buf)?;
-            Ok(LoxValue::String(buf))
+            Ok(Rc::new(LoxValue::String(buf)))
         }
     }
 }

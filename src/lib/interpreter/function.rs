@@ -49,19 +49,20 @@ impl LoxFunction {
 impl LoxCallable for LoxFunction {
     fn call(
         &self,
-        _: Rc<Environment>,
+        env: Rc<Environment>,
         locals: &HashMap<Expr, usize>,
-        args: &[LoxValue],
-    ) -> LoxResult<LoxValue> {
-        let env = Environment::from(self.closure.clone());
+        args: &[Rc<LoxValue>],
+    ) -> LoxResult<Rc<LoxValue>> {
+        let env = Environment::from(Rc::clone(&self.closure));
         if let Stmt::Function(_name, params, body) = &self.declaration {
             for (ident, val) in params.iter().zip(args) {
-                env.define(&ident.to_string(), val.to_owned())
+                let val = (**val).to_owned();
+                env.define(&ident.to_string(), val)
             }
             if let Err(err) = body.execute(Rc::new(env), locals, &mut std::io::stdout()) {
                 // Capture the return value that is unwinding the call stack
                 if let LoxError::Return(r) = err {
-                    return Ok(r.val);
+                    return Ok(Rc::new(r.val));
                 }
                 return Err(err);
             }
@@ -71,7 +72,7 @@ impl LoxCallable for LoxFunction {
             return self.closure.get_at(0, "this");
         }
 
-        Ok(LoxValue::Nil)
+        Ok(Rc::new(LoxValue::Nil))
     }
 
     fn arity(&self) -> usize {

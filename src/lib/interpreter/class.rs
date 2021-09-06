@@ -37,8 +37,8 @@ impl LoxCallable for LoxClass {
         &self,
         env: Rc<Environment>,
         locals: &HashMap<Expr, usize>,
-        args: &[LoxValue],
-    ) -> LoxResult<LoxValue> {
+        args: &[Rc<LoxValue>],
+    ) -> LoxResult<Rc<LoxValue>> {
         let instance = LoxInstance::new(self.clone());
         if let Some(constructor) = self.find_method("init") {
             constructor
@@ -46,7 +46,7 @@ impl LoxCallable for LoxClass {
                 .call(Rc::clone(&env), locals, args)?;
         }
 
-        Ok(LoxValue::Instance(instance))
+        Ok(Rc::new(LoxValue::Instance(instance)))
     }
 
     fn to_string(&self) -> String {
@@ -64,7 +64,7 @@ impl LoxCallable for LoxClass {
 #[derive(Clone, Debug)]
 pub(crate) struct LoxInstance {
     class: LoxClass,
-    fields: RefCell<HashMap<String, LoxValue>>,
+    fields: RefCell<HashMap<String, Rc<LoxValue>>>,
 }
 
 impl LoxInstance {
@@ -75,23 +75,23 @@ impl LoxInstance {
         }
     }
 
-    pub fn get(&self, name: &Token) -> LoxResult<LoxValue> {
+    pub fn get(&self, name: &Token) -> LoxResult<Rc<LoxValue>> {
         let fields = self.fields.borrow();
         if let Some(prop) = fields.get(&name.to_string()).cloned() {
             return Ok(prop);
         }
 
         if let Some(method) = self.class.find_method(&name.to_string()) {
-            return Ok(LoxValue::Callable(Rc::new(method.bind(self)?)));
+            return Ok(Rc::new(LoxValue::Callable(Rc::new(method.bind(self)?))));
         }
 
         Err(InnerError::new(*name.span(), &format!("undefined property `{}`", name)).into())
     }
 
-    pub fn set(&self, name: &Token, val: &LoxValue) -> LoxResult<()> {
+    pub fn set(&self, name: &Token, val: &Rc<LoxValue>) -> LoxResult<()> {
         self.fields
             .borrow_mut()
-            .insert(name.to_string(), val.to_owned());
+            .insert(name.to_string(), Rc::clone(val));
         Ok(())
     }
 }

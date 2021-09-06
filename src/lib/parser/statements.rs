@@ -48,12 +48,12 @@ impl Stmt {
             }
             Stmt::Variable(name, initializer) => {
                 let value = if initializer.is_nil_expr() {
-                    LoxValue::Nil
+                    Rc::new(LoxValue::Nil)
                 } else {
-                    initializer.evaluate(env.clone(), locals)?
+                    initializer.evaluate(Rc::clone(&env), locals)?
                 };
 
-                env.define(&name.to_string(), value);
+                env.define(&name.to_string(), (*value).to_owned());
             }
             Stmt::Block(stmts) => {
                 let scope = Rc::new(Environment::from(env));
@@ -62,7 +62,7 @@ impl Stmt {
                 }
             }
             Stmt::If(condition, then_branch, else_branch) => {
-                let condition = condition.evaluate(env.clone(), locals)?;
+                let condition = condition.evaluate(Rc::clone(&env), locals)?;
                 if condition.is_truthy() {
                     then_branch.execute(env, locals, writer)?;
                 } else if let Some(stmt) = else_branch {
@@ -70,12 +70,12 @@ impl Stmt {
                 }
             }
             Stmt::While(condition, body) => {
-                while condition.evaluate(env.clone(), locals)?.is_truthy() {
-                    body.execute(env.clone(), locals, writer)?;
+                while condition.evaluate(Rc::clone(&env), locals)?.is_truthy() {
+                    body.execute(Rc::clone(&env), locals, writer)?;
                 }
             }
             Stmt::Function(name, _, _) => {
-                let function = LoxFunction::new(self.to_owned(), env.clone(), false)?;
+                let function = LoxFunction::new(self.to_owned(), Rc::clone(&env), false)?;
                 env.define(
                     &name.to_string(),
                     LoxValue::Callable(std::rc::Rc::new(function)),
@@ -83,7 +83,7 @@ impl Stmt {
             }
             Stmt::Return(kw, val) => {
                 return Err(ReturnVal::new(
-                    val.evaluate(env, locals)?,
+                    (*val.evaluate(env, locals)?).to_owned(),
                     Span::new(kw.span().start(), val.position().end()),
                 )
                 .into());

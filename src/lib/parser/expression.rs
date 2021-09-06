@@ -41,7 +41,7 @@ impl Expr {
         &self,
         env: Rc<Environment>,
         locals: &HashMap<Expr, usize>,
-    ) -> LoxResult<LoxValue> {
+    ) -> LoxResult<Rc<LoxValue>> {
         let pos = &self.position();
 
         let var_lookup = |name, expr| {
@@ -54,10 +54,13 @@ impl Expr {
         };
 
         match self {
-            Expr::Literal(tk) => tk
-                .kind()
-                .try_into()
-                .map_err(|e: &str| InnerError::new(*pos, e).into()),
+            Expr::Literal(tk) => {
+                let val = tk.kind().try_into().map_err(|e: &str| {
+                    let err: LoxError = InnerError::new(*pos, e).into();
+                    err
+                })?;
+                Ok(Rc::new(val))
+            }
             Expr::Grouping(expr) => (*expr).evaluate(env, locals),
             Expr::Unary(op, rhs) => {
                 let rhs = rhs.evaluate(env, locals)?;
@@ -66,9 +69,11 @@ impl Expr {
 
                 match *op.kind() {
                     TokenKind::Punctuator(Sub) => {
-                        Ok((-rhs).map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()))?)
+                        Ok(Rc::new((-(*rhs).to_owned()).map_err(|e: LoxError| {
+                            InnerError::new(*pos, &e.to_string())
+                        })?))
                     }
-                    TokenKind::Punctuator(Not) => Ok(LoxValue::Boolean(!rhs.is_truthy())),
+                    TokenKind::Punctuator(Not) => Ok(Rc::new(LoxValue::Boolean(!rhs.is_truthy()))),
                     _ => Err(InnerError::new(
                         *pos,
                         "attempt to evaluate an invalid unary expression",
@@ -81,6 +86,9 @@ impl Expr {
                 let lhs = lhs.evaluate(Rc::clone(&env), locals)?;
                 let rhs = rhs.evaluate(env, locals)?;
                 use Punctuator::*;
+                let lhs = (*lhs).to_owned();
+                let rhs = (*rhs).to_owned();
+
                 let result = match *op.kind() {
                     TokenKind::Punctuator(Sub) => lhs - rhs,
                     TokenKind::Punctuator(Mul) => lhs * rhs,
@@ -97,8 +105,12 @@ impl Expr {
                         "attempt to evaluate an invalid binary expression. this is probably a bug.",
                     )
                     .into()),
-                };
-                result.map_err(|e: LoxError| InnerError::new(*pos, &e.to_string()).into())
+                }
+                .map_err(|e: LoxError| {
+                    let err: LoxError = InnerError::new(*pos, &e.to_string()).into();
+                    err
+                })?;
+                Ok(Rc::new(result))
             }
 
             Expr::Logical(lhs, op, rhs) => {
@@ -120,13 +132,15 @@ impl Expr {
 
                 if let Some(idx) = locals.get(self) {
                     env.assign_at(*idx, &name.to_string(), &val)?;
-                    Ok(val)
                 } else {
-                    return env
-                        .global()
+                    env.global()
                         .assign(&name.to_string(), &val)
-                        .map_err(|e| InnerError::new(*pos, &e.to_string()).into());
+                        .map_err(|e: LoxError| {
+                            let err: LoxError = InnerError::new(*pos, &e.to_string()).into();
+                            err
+                        })?;
                 }
+                Ok(val)
             }
 
             Expr::Call(callee, _, args) => {
@@ -136,7 +150,7 @@ impl Expr {
                     .map(|arg| arg.evaluate(Rc::clone(&env), locals))
                     .collect::<LoxResult<_>>()?;
 
-                if let LoxValue::Callable(c) = callee {
+                if let LoxValue::Callable(c) = &*callee {
                     if c.arity() != args.len() {
                         return Err(InnerError::new(
                             *pos,
@@ -149,23 +163,19 @@ impl Expr {
                 Err(InnerError::new(*pos, "can only call functions or class constructors").into())
             }
             Expr::Get(object, name) => {
-                let object = object.evaluate(env, locals)?;
-                if let LoxValue::Instance(i) = object {
+                let object = object.evaluate(Rc::clone(&env), locals)?;
+                if let LoxValue::Instance(i) = &*object {
                     return i.get(name);
                 }
                 Err(InnerError::new(*pos, "only instances have properties").into())
             }
             Expr::Set(object, name, value) => {
-                let var = match &**object {
-                    // Expr::This(_) => "cake".to_string(),
-                    _ => object.to_string(),
-                };
-                let object = object.evaluate(Rc::clone(&env), locals)?;
-                if let LoxValue::Instance(ref i) = object {
+                let object = &object.evaluate(Rc::clone(&env), locals)?;
+                if let LoxValue::Instance(ref i) = **object {
                     let value = value.evaluate(Rc::clone(&env), locals)?;
-                    i.set(name, &value)?;
-                    // dbg!(&object, &name, &value);
-                    return env.assign(&var, &object);
+                    (*i).set(name, &value)?;
+                    dbg!(&env);
+                    return Ok(value);
                 }
                 Err(InnerError::new(*pos, "only instances have fields").into())
             }

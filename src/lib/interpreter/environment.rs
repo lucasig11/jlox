@@ -10,7 +10,7 @@ use super::LoxValue;
 /// environment. The global one has no enclosing env.
 #[derive(Debug)]
 pub(crate) struct Environment {
-    values: RefCell<HashMap<Box<str>, LoxValue>>,
+    values: RefCell<HashMap<Box<str>, Rc<LoxValue>>>,
     enclosing: Option<Rc<Environment>>,
 }
 
@@ -33,15 +33,15 @@ impl Environment {
 
     /// Define a new variable in the current scope.
     pub fn define(&self, name: &str, val: LoxValue) {
-        self.values.borrow_mut().insert(name.into(), val);
+        self.values.borrow_mut().insert(name.into(), Rc::new(val));
     }
 
     /// Assign to a value at the innermost scope where it's found.
-    pub fn assign(&self, name: &str, val: &LoxValue) -> LoxResult<LoxValue> {
+    pub fn assign(&self, name: &str, val: &LoxValue) -> LoxResult<()> {
         match self.values.borrow_mut().get_mut(name) {
             Some(v) => {
-                *v = val.to_owned();
-                Ok(v.clone())
+                *v = Rc::new(val.to_owned());
+                Ok(())
             }
             None => {
                 if let Some(env) = &self.enclosing {
@@ -53,9 +53,9 @@ impl Environment {
     }
 
     /// Searches for a variable value from the innermost scope.
-    pub fn get(&self, name: &str) -> LoxResult<LoxValue> {
+    pub fn get(&self, name: &str) -> LoxResult<Rc<LoxValue>> {
         if let Some(t) = self.values.borrow().get(name) {
-            return Ok(t.clone());
+            return Ok(Rc::clone(t));
         }
 
         if let Some(env) = &self.enclosing {
@@ -69,15 +69,15 @@ impl Environment {
     ///
     /// This function relies on the variable binding and resolution performed by the [`Resolver`].
     /// So we already know that the variable exists and where it was declared.
-    pub fn get_at(&self, distance: usize, name: &str) -> LoxResult<LoxValue> {
+    pub fn get_at(&self, distance: usize, name: &str) -> LoxResult<Rc<LoxValue>> {
         let values = self.ancestor(distance).values.borrow();
         let val = values.get(name).unwrap();
-        Ok(val.to_owned())
+        Ok(Rc::clone(val))
     }
 
     pub fn assign_at(&self, distance: usize, name: &str, val: &LoxValue) -> LoxResult<()> {
         let mut values = self.ancestor(distance).values.borrow_mut();
-        values.insert(name.into(), val.to_owned());
+        values.insert(name.into(), Rc::new(val.to_owned()));
         Ok(())
     }
 

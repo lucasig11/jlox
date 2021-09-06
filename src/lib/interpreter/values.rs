@@ -30,8 +30,8 @@ pub(crate) trait LoxCallable {
         &self,
         env: Rc<Environment>,
         locals: &HashMap<Expr, usize>,
-        args: &[LoxValue],
-    ) -> LoxResult<LoxValue>;
+        args: &[Rc<LoxValue>],
+    ) -> LoxResult<Rc<LoxValue>>;
     fn arity(&self) -> usize {
         0
     }
