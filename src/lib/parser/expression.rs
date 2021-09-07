@@ -166,10 +166,11 @@ impl Expr {
                     return i.get(name);
                 }
 
-                // FIXME: require methods to be static
                 if let LoxValue::Callable(class) = &*object {
                     if let Some(class) = class.as_any().downcast_ref::<LoxClass>() {
-                        return class.find_static(&name.to_string());
+                        return class
+                            .find_static(&name.to_string())
+                            .map_err(|e| InnerError::new(*pos, &e.to_string()).into());
                     }
                 }
 
