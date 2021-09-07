@@ -32,8 +32,8 @@ impl Environment {
     }
 
     /// Define a new variable in the current scope.
-    pub fn define(&self, name: &str, val: LoxValue) {
-        self.values.borrow_mut().insert(name.into(), Rc::new(val));
+    pub fn define(&self, name: &str, val: Rc<LoxValue>) {
+        self.values.borrow_mut().insert(name.into(), val);
     }
 
     /// Assign to a value at the innermost scope where it's found.
@@ -96,5 +96,9 @@ impl Environment {
             env = e
         }
         env
+    }
+
+    pub fn enclosing(&self) -> &Option<Rc<Self>> {
+        &self.enclosing
     }
 }

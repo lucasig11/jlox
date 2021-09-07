@@ -83,9 +83,12 @@ impl Interpreter {
         let statements = Vec::from(statements);
         let globals = Environment::new();
 
+        let clock = Rc::new(builtins::Clock::new());
+        let read = Rc::new(builtins::Read::new());
+
         // Define native functions
-        globals.define("clock", LoxValue::Callable(Rc::new(builtins::Clock::new())));
-        globals.define("read", LoxValue::Callable(Rc::new(builtins::Read::new())));
+        globals.define("clock", Rc::new(LoxValue::Callable(clock)));
+        globals.define("read", Rc::new(LoxValue::Callable(read)));
 
         Self {
             statements,

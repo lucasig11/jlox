@@ -53,7 +53,7 @@ impl Stmt {
                     initializer.evaluate(Rc::clone(&env), locals)?
                 };
 
-                env.define(&name.to_string(), (*value).to_owned());
+                env.define(&name.to_string(), value);
             }
             Stmt::Block(stmts) => {
                 let scope = Rc::new(Environment::from(env));
@@ -75,11 +75,8 @@ impl Stmt {
                 }
             }
             Stmt::Function(name, _, _) => {
-                let function = LoxFunction::new(self.to_owned(), Rc::clone(&env), false)?;
-                env.define(
-                    &name.to_string(),
-                    LoxValue::Callable(std::rc::Rc::new(function)),
-                );
+                let function = Rc::new(LoxFunction::new(self.to_owned(), Rc::clone(&env), false)?);
+                env.define(&name.to_string(), Rc::new(LoxValue::Callable(function)));
             }
             Stmt::Return(kw, val) => {
                 return Err(ReturnVal::new(
