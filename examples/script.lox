@@ -53,8 +53,8 @@ Bacon().eat();
 
 // Bound methods
 class Cake {
-  init(flavor) {
-	// this.flavor = flavor;
+  init(arg) {
+	this.flavor = arg;
   }
 
   taste(adjective) {
@@ -63,6 +63,5 @@ class Cake {
 }
 
 let cake = Cake("German chocolate");
-cake.flavor = "German chocolate";
-cake.taste("delicious"); // Prints "The German chocolate cake is delicious!".
+cake.taste("delicious"); 
 
