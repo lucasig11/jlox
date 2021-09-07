@@ -515,6 +515,12 @@ impl<'a> Parser<'a> {
                 TokenKind::Keyword(Keyword::Nil) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::This) => Expr::This(tk.to_owned()),
                 TokenKind::Identifier(_) => Expr::Variable(tk.to_owned()),
+                TokenKind::Keyword(Keyword::Super) => {
+                    self.inner.advance();
+                    self.consume(Punctuator::Dot, "expected `.` after `super`")?;
+                    let method = self.consume_ident("expected superclass method name")?;
+                    return Ok(Expr::Super(tk.to_owned(), method.to_owned()));
+                }
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
                     self.inner.advance();
                     let expr = self.expression()?;
