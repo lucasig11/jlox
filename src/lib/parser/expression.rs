@@ -191,7 +191,9 @@ impl Expr {
             }
             Expr::This(kw) => var_lookup(&kw.to_string(), self),
             Expr::Super(_, method) => {
-                let distance = locals.get(self).expect("super expr not declared in locals");
+                // Safe to unwrap here because we resolved the `super` expression already
+                // so we know it exists
+                let distance = locals.get(self).unwrap();
                 let superclass = env.get_at(*distance, "super")?;
                 let object = env.get_at(distance - 1, "this")?;
                 let method = superclass

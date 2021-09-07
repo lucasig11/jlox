@@ -18,6 +18,7 @@ enum FunctionType {
 #[derive(Clone, Copy)]
 enum ClassType {
     Class,
+    SubClass,
 }
 
 pub(crate) trait Resolvable {
@@ -79,6 +80,7 @@ impl Resolvable for Stmt {
                 resolver.define(name);
 
                 if let Some(superclass) = superclass {
+                    *resolver.current_class.borrow_mut() = Some(ClassType::SubClass);
                     if name.to_string().eq(&superclass.to_string()) {
                         return Err(InnerError::new(
                             superclass.position(),
@@ -156,7 +158,23 @@ impl Resolvable for Expr {
                 }
                 resolver.resolve_local(self, keyword)?
             }
-            Expr::Super(ref keyword, _) => resolver.resolve_local(self, keyword)?,
+            Expr::Super(ref keyword, _) => match *resolver.current_class.borrow() {
+                Some(ClassType::SubClass) => resolver.resolve_local(self, keyword)?,
+                None => {
+                    return Err(InnerError::new(
+                        *keyword.span(),
+                        "cannot use `super` outside of a class",
+                    )
+                    .into())
+                }
+                Some(ClassType::Class) => {
+                    return Err(InnerError::new(
+                        *keyword.span(),
+                        "cannot use `super` in a class with no superclass",
+                    )
+                    .into())
+                }
+            },
         }
         Ok(())
     }
