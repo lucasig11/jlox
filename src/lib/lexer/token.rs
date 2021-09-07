@@ -175,6 +175,7 @@ pub enum Keyword {
     Super,
     This,
     Extends,
+    Static,
 }
 
 impl std::fmt::Display for Keyword {
@@ -198,6 +199,7 @@ impl std::fmt::Display for Keyword {
                 Keyword::Super => "super",
                 Keyword::This => "this",
                 Keyword::Extends => "extends",
+                Keyword::Static => "static",
             }
         )
     }
@@ -222,6 +224,7 @@ impl FromStr for Keyword {
             "super" => Ok(Keyword::Super),
             "this" => Ok(Keyword::This),
             "extends" => Ok(Keyword::Extends),
+            "static" => Ok(Keyword::Static),
             _ => Err(s.to_owned()),
         }
     }
