@@ -103,7 +103,16 @@ impl Stmt {
                 } else {
                     None
                 };
-                env.define(&name, LoxValue::Nil);
+                env.define(&name, Rc::new(LoxValue::Nil));
+
+                let mut env = if let Some(ref superclass) = superclass {
+                    let env = Environment::from(Rc::clone(&env));
+                    env.define("super", Rc::clone(superclass));
+                    Rc::new(env)
+                } else {
+                    env
+                };
+
                 let to_map = |v: &Vec<Stmt>, can_be_init: bool| {
                     (*v).iter()
                         .map(|el| {
@@ -123,10 +132,15 @@ impl Stmt {
                         .collect::<LoxResult<HashMap<_, _>>>()
                 };
 
-                let methods = to_map(methods, true)?;
                 let static_methods = to_map(static_methods, false)?;
+                let methods = to_map(methods, true)?;
+
+                if superclass.is_some() {
+                    env = Rc::clone(env.enclosing().as_ref().unwrap());
+                }
 
                 let class = LoxClass::new(&name, superclass, methods, static_methods);
+
                 env.assign(&name, &LoxValue::Callable(Rc::new(class)))?;
             }
         };

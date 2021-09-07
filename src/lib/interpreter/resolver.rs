@@ -87,6 +87,8 @@ impl Resolvable for Stmt {
                         .into());
                     }
                     resolver.resolve(superclass)?;
+                    resolver.begin_scope();
+                    resolver.put(String::from("super"), true);
                 }
 
                 for static_method in &*static_methods {
@@ -99,6 +101,9 @@ impl Resolvable for Stmt {
                     resolver.resolve_func(method, declaration)?;
                 }
                 resolver.end_scope();
+                if superclass.is_some() {
+                    resolver.end_scope();
+                }
                 *resolver.current_class.borrow_mut() = enclosing_class;
             }
         }
@@ -151,7 +156,7 @@ impl Resolvable for Expr {
                 }
                 resolver.resolve_local(self, keyword)?
             }
-            Expr::Super(_, _) => todo!(),
+            Expr::Super(ref keyword, _) => resolver.resolve_local(self, keyword)?,
         }
         Ok(())
     }

@@ -190,7 +190,24 @@ impl Expr {
                 Err(InnerError::new(*pos, "only instances have fields").into())
             }
             Expr::This(kw) => var_lookup(&kw.to_string(), self),
-            Expr::Super(_, _) => todo!(),
+            Expr::Super(_, method) => {
+                let distance = locals.get(self).expect("super expr not declared in locals");
+                let superclass = env.get_at(*distance, "super")?;
+                let object = env.get_at(distance - 1, "this")?;
+                let method = superclass
+                    .as_class()
+                    .map_err(|e| InnerError::new(*method.span(), &e.to_string()))?
+                    .find_method(&method.to_string())
+                    .ok_or_else(|| {
+                        InnerError::new(
+                            *method.span(),
+                            &format!("undefined property `{}`", method.to_string()),
+                        )
+                    })?;
+                method
+                    .bind(object.as_instance()?)
+                    .map(|f| Rc::new(LoxValue::Callable(Rc::new(f))))
+            }
         }
     }
 

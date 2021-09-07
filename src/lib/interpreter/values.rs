@@ -11,7 +11,7 @@ use std::{
     rc::Rc,
 };
 
-use super::{class::LoxInstance, Environment};
+use super::{class::LoxInstance, Environment, LoxClass};
 
 /// Internal language types
 #[derive(Clone)]
@@ -98,6 +98,23 @@ impl LoxValue {
 
     fn is_string(&self) -> bool {
         matches!(self, Self::String(_))
+    }
+
+    pub fn as_class(&self) -> LoxResult<&LoxClass> {
+        if let Self::Callable(c) = self {
+            return c
+                .as_any()
+                .downcast_ref::<LoxClass>()
+                .ok_or_else(|| LoxError::Generic(String::from("not a class")));
+        }
+        Err(LoxError::Generic(String::from("not callable")))
+    }
+
+    pub fn as_instance(&self) -> LoxResult<&LoxInstance> {
+        if let Self::Instance(i) = self {
+            return Ok(i);
+        }
+        Err(LoxError::Generic(String::from("not an instance")))
     }
 }
 
