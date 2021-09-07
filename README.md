@@ -1,23 +1,29 @@
+# Lox programming language
+<p align="center"><i>The walk-tree interpreter</i></p>
 
-_work in progress..._
+**Original implementation:** [Crafting Interpreters book.](https://craftinginterpreters.com/contents.html)
 
----
+This implementation is **_not_** compatible with the original one, see the differences [here](#differences-from-the-original-implementation).
 
-This is the interpreter for the Lox language, developed in [Robert Nystrom's Crafting Interpreters](https://craftinginterpreters.com/contents.html) book, written in Rust instead of Java.
 
+### Requirements
+- [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 ### Run
-[Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) is required.
-
 After cloning the repo and `cd`ing into it, issue the following commands:
 
 ```shell
-# build the release version with Cargo.
-cargo build --release
+cargo install --git https://github.com/lucasig11/jlox
 
-# run the help command
-./target/release/jlox --help
+# Run the REPL
+jlox
 
+# Run some script
+jlox examples/script.jlox
 ```
 
-
-
+### Differences from the original implementation
+Functionality |  Original | This 
+:-: | :-: | :-:
+Inheritance | `<` | `extends` 
+If statement |  ```if (true) // some code``` | ```if true { // some code }```
+Static methods | `not implemented` | `static`
