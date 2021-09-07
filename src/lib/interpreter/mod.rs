@@ -47,6 +47,9 @@ mod builtins {
                     .as_millis() as f64,
             )))
         }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
     }
 
     /// Reads a line from stdin, returning it as a [`LoxValue::String`]
@@ -60,6 +63,9 @@ mod builtins {
             let mut buf = String::new();
             std::io::stdin().read_line(&mut buf)?;
             Ok(Rc::new(LoxValue::String(buf)))
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
         }
     }
 }

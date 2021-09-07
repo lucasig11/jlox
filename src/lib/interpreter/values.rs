@@ -35,9 +35,12 @@ pub(crate) trait LoxCallable {
     fn arity(&self) -> usize {
         0
     }
+
     fn to_string(&self) -> String {
         String::from("<native fn>")
     }
+
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 impl LoxValue {

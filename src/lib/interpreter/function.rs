@@ -85,4 +85,8 @@ impl LoxCallable for LoxFunction {
         }
         unreachable!()
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
