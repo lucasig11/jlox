@@ -1,5 +1,5 @@
 use crate::lib::{
-    error::{InnerError, LoxResult},
+    error::{InnerError, LoxError, LoxResult},
     interpreter::{values::LoxCallable, Environment, LoxValue},
     parser::Expr,
     token::Token,
@@ -17,12 +17,18 @@ use super::LoxFunction;
 pub(crate) struct LoxClass {
     name: String,
     methods: HashMap<String, LoxFunction>,
+    static_methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: &str, methods: HashMap<String, LoxFunction>) -> Self {
+    pub fn new(
+        name: &str,
+        methods: HashMap<String, LoxFunction>,
+        static_methods: HashMap<String, LoxFunction>,
+    ) -> Self {
         Self {
             methods,
+            static_methods,
             name: name.to_string(),
         }
     }
@@ -32,7 +38,13 @@ impl LoxClass {
     }
 
     pub fn find_static(&self, name: &str) -> LoxResult<Rc<LoxValue>> {
-        todo!("attempt to call static method `{}`", name)
+        match self.static_methods.get(name) {
+            Some(f) => Ok(Rc::new(LoxValue::Callable(Rc::new(f.to_owned())))),
+            None => Err(LoxError::Generic(format!(
+                "static method `{}` not found for `{}` class",
+                name, self.name
+            ))),
+        }
     }
 }
 

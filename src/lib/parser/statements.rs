@@ -23,7 +23,7 @@ pub(crate) enum Stmt {
     /// Function statement(name, params, body)
     Function(Token, Vec<Token>, Box<Stmt>),
     /// Class statement(name, superclass: Expr::Variable, methods: Vec<Stmt::Function>)
-    Class(Token, Option<Expr>, Vec<Stmt>),
+    Class(Token, Option<Expr>, Vec<Stmt>, Vec<Stmt>),
     /// Variable statement(name, initializer)
     Variable(Token, Expr),
     /// While statement(condition, body)
@@ -88,22 +88,33 @@ impl Stmt {
                 )
                 .into());
             }
-            Stmt::Class(name, _, methods) => {
+            Stmt::Class(name, _, methods, static_methods) => {
+                let pos = name.span();
                 let name = name.to_string();
                 env.define(&name, LoxValue::Nil);
-                let methods = methods
-                    .iter()
-                    .map(|el| {
-                        let func = LoxFunction::new(
-                            el.to_owned(),
-                            Rc::clone(&env),
-                            el.to_string().eq("init"),
-                        )?;
-                        Ok((el.to_string(), func))
-                    })
-                    .collect::<LoxResult<HashMap<_, _>>>()?;
+                let to_map = |v: &Vec<Stmt>, can_be_init: bool| {
+                    (*v).iter()
+                        .map(|el| {
+                            let is_initializer = el.to_string().eq("init");
+                            if !can_be_init && is_initializer {
+                                return Err(
+                                    InnerError::new(*pos, "constructor cannot be static").into()
+                                );
+                            }
+                            let func = LoxFunction::new(
+                                el.to_owned(),
+                                Rc::clone(&env),
+                                el.to_string().eq("init"),
+                            )?;
+                            Ok((el.to_string(), func))
+                        })
+                        .collect::<LoxResult<HashMap<_, _>>>()
+                };
 
-                let class = LoxClass::new(&name, methods);
+                let methods = to_map(methods, true)?;
+                let static_methods = to_map(static_methods, false)?;
+
+                let class = LoxClass::new(&name, methods, static_methods);
                 env.assign(&name, &LoxValue::Callable(Rc::new(class)))?;
             }
         };
@@ -136,15 +147,15 @@ impl std::fmt::Display for Stmt {
             f,
             "{}",
             match &self {
-                Stmt::Expression(_) => "expression".to_string(),
-                Stmt::Print(_) => "print".to_string(),
-                Stmt::Return(_, _) => "return".to_string(),
-                Stmt::If(_, _, _) => "if".to_string(),
+                Stmt::Expression(..) => "expression".to_string(),
+                Stmt::Print(..) => "print".to_string(),
+                Stmt::Return(..) => "return".to_string(),
+                Stmt::If(..) => "if".to_string(),
                 Stmt::Function(name, _, _) => name.to_string(),
-                Stmt::Class(_, _, _) => "class".to_string(),
+                Stmt::Class(..) => "class".to_string(),
                 Stmt::Variable(name, _) => name.to_string(),
-                Stmt::While(_, _) => "while".to_string(),
-                Stmt::Block(_) => "block".to_string(),
+                Stmt::While(..) => "while".to_string(),
+                Stmt::Block(..) => "block".to_string(),
             }
         )
     }

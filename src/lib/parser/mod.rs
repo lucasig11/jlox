@@ -132,11 +132,13 @@ impl<'a> Parser<'a> {
         )?;
 
         let mut methods = Vec::new();
+        let mut static_methods = Vec::new();
         while !self.check(Punctuator::CloseBlock) && self.inner.peek().is_some() {
             if self.matches(Keyword::Static) {
-                let _ = ();
+                static_methods.push(self.func_decl("method")?);
+            } else {
+                methods.push(self.func_decl("method")?);
             }
-            methods.push(self.func_decl("method")?);
         }
 
         self.consume(
@@ -144,7 +146,7 @@ impl<'a> Parser<'a> {
             "expected block after class declaration",
         )?;
 
-        Ok(Stmt::Class(name.clone(), None, methods))
+        Ok(Stmt::Class(name.clone(), None, methods, static_methods))
     }
 
     /// Parses a function declaration.
@@ -510,6 +512,13 @@ impl<'a> Parser<'a> {
                     let expr = self.expression()?;
                     self.consume(Punctuator::CloseParen, "expected `)` after expression")?;
                     return Ok(Expr::Grouping(expr.into()));
+                }
+                TokenKind::Keyword(Keyword::Static) => {
+                    return Err(InnerError::new(
+                        *tk.to_owned().span(),
+                        "cannot use static keyword outside of a class",
+                    )
+                    .into())
                 }
                 _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
             };

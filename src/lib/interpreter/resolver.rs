@@ -71,12 +71,15 @@ impl Resolvable for Stmt {
                 resolver.resolve(condition)?;
                 resolver.resolve(&**body)?;
             }
-            Stmt::Class(name, _, methods) => {
+            Stmt::Class(name, _, methods, static_methods) => {
                 let enclosing_class = *resolver.current_class.borrow();
                 *resolver.current_class.borrow_mut() = Some(ClassType::Class);
 
                 resolver.declare(name);
                 resolver.define(name);
+                for static_method in &*static_methods {
+                    resolver.resolve_func(static_method, FunctionType::Method)?;
+                }
                 resolver.begin_scope();
                 resolver.put(String::from("this"), true);
                 for method in &*methods {
