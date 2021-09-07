@@ -45,21 +45,19 @@ let a = "global";
 
 class Food {
   eat() {
-    print "Crunch crunch crunch!";
-  }
-
-  static type() {
-  	print "food";
+    print "eating some food";
   }
 }
 
 // Inheritance
-class Bacon extends Food { }
+class Bacon extends Food { 
+	eat() {
+		super.eat();
+		print "its bacon";
+	}
+}
 
 Bacon().eat(); 
-
-// static functions are not inherited
-// Bacon.type();
 
 // Bound methods
 class Cake {
@@ -72,8 +70,7 @@ class Cake {
   }
 }
 
-let cake = Cake("German chocolate");
-cake.taste("delicious"); 
+Cake("German chocolate").taste("delicious"); 
 
 // Static methods 
 class Math {
