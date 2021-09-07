@@ -17,24 +17,40 @@ use super::LoxFunction;
 pub(crate) struct LoxClass {
     name: String,
     methods: HashMap<String, LoxFunction>,
+    superclass: Option<Rc<LoxValue>>,
     static_methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
     pub fn new(
         name: &str,
+        superclass: Option<Rc<LoxValue>>,
         methods: HashMap<String, LoxFunction>,
         static_methods: HashMap<String, LoxFunction>,
     ) -> Self {
         Self {
             methods,
+            superclass,
             static_methods,
             name: name.to_string(),
         }
     }
 
     pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {
-        self.methods.get(name)
+        self.methods.get(name).or_else(|| {
+            // if we have a superclass
+            self.superclass.as_ref().and_then(|superclass| {
+                // extract class from value
+                if let LoxValue::Callable(ref c) = **superclass {
+                    return c
+                        .as_any()
+                        .downcast_ref::<LoxClass>()
+                        .unwrap()
+                        .find_method(name);
+                }
+                None
+            })
+        })
     }
 
     pub fn find_static(&self, name: &str) -> LoxResult<Rc<LoxValue>> {

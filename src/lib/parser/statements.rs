@@ -88,9 +88,21 @@ impl Stmt {
                 )
                 .into());
             }
-            Stmt::Class(name, _, methods, static_methods) => {
+            Stmt::Class(name, superclass, methods, static_methods) => {
                 let pos = name.span();
                 let name = name.to_string();
+
+                let superclass = if let Some(superclass) = &superclass {
+                    let superclass = superclass.evaluate(Rc::clone(&env), locals)?;
+                    if let LoxValue::Callable(f) = &*superclass {
+                        if f.as_any().downcast_ref::<LoxClass>().is_none() {
+                            return Err(InnerError::new(*pos, "superclass must be a class").into());
+                        }
+                    }
+                    Some(superclass)
+                } else {
+                    None
+                };
                 env.define(&name, LoxValue::Nil);
                 let to_map = |v: &Vec<Stmt>, can_be_init: bool| {
                     (*v).iter()
@@ -114,7 +126,7 @@ impl Stmt {
                 let methods = to_map(methods, true)?;
                 let static_methods = to_map(static_methods, false)?;
 
-                let class = LoxClass::new(&name, methods, static_methods);
+                let class = LoxClass::new(&name, superclass, methods, static_methods);
                 env.assign(&name, &LoxValue::Callable(Rc::new(class)))?;
             }
         };

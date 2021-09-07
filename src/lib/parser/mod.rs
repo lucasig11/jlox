@@ -122,9 +122,12 @@ impl<'a> Parser<'a> {
     fn class_decl(&self) -> LoxResult<Stmt> {
         let name = self.consume_ident("expected name after `class`")?;
 
-        if self.matches(Keyword::Extends) {
-            let _superclass = self.consume_ident("expected superclass name after `extends`")?;
-        }
+        let superclass = if self.matches(Keyword::Extends) {
+            let name = self.consume_ident("expected superclass")?;
+            Some(Expr::Variable(name.to_owned()))
+        } else {
+            None
+        };
 
         self.consume(
             Punctuator::OpenBlock,
@@ -146,7 +149,12 @@ impl<'a> Parser<'a> {
             "expected block after class declaration",
         )?;
 
-        Ok(Stmt::Class(name.clone(), None, methods, static_methods))
+        Ok(Stmt::Class(
+            name.clone(),
+            superclass,
+            methods,
+            static_methods,
+        ))
     }
 
     /// Parses a function declaration.

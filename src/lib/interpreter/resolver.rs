@@ -71,12 +71,24 @@ impl Resolvable for Stmt {
                 resolver.resolve(condition)?;
                 resolver.resolve(&**body)?;
             }
-            Stmt::Class(name, _, methods, static_methods) => {
+            Stmt::Class(name, superclass, methods, static_methods) => {
                 let enclosing_class = *resolver.current_class.borrow();
                 *resolver.current_class.borrow_mut() = Some(ClassType::Class);
 
                 resolver.declare(name);
                 resolver.define(name);
+
+                if let Some(superclass) = superclass {
+                    if name.to_string().eq(&superclass.to_string()) {
+                        return Err(InnerError::new(
+                            superclass.position(),
+                            "a class cannot inherit itself",
+                        )
+                        .into());
+                    }
+                    resolver.resolve(superclass)?;
+                }
+
                 for static_method in &*static_methods {
                     resolver.resolve_func(static_method, FunctionType::Method)?;
                 }
