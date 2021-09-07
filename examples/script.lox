@@ -65,3 +65,13 @@ class Cake {
 let cake = Cake("German chocolate");
 cake.taste("delicious"); 
 
+static fn sum(a) { return a + b; }
+
+// Static methods 
+class Math {
+	static square(n) {
+		return n * n;
+	}
+}
+
+print Math.square(2);
