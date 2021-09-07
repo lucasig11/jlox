@@ -133,6 +133,9 @@ impl<'a> Parser<'a> {
 
         let mut methods = Vec::new();
         while !self.check(Punctuator::CloseBlock) && self.inner.peek().is_some() {
+            if self.matches(Keyword::Static) {
+                let _ = ();
+            }
             methods.push(self.func_decl("method")?);
         }
 

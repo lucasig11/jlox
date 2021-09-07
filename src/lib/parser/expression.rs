@@ -1,6 +1,6 @@
 use crate::lib::{
     error::*,
-    interpreter::{Environment, LoxValue},
+    interpreter::{Environment, LoxClass, LoxValue},
     position::Span,
     token::{Keyword, Punctuator, Token, TokenKind},
 };
@@ -165,7 +165,19 @@ impl Expr {
                 if let LoxValue::Instance(i) = &*object {
                     return i.get(name);
                 }
-                Err(InnerError::new(*pos, "only instances have properties").into())
+
+                // FIXME: require methods to be static
+                if let LoxValue::Callable(class) = &*object {
+                    if let Some(class) = class.as_any().downcast_ref::<LoxClass>() {
+                        return class.find_static(&name.to_string());
+                    }
+                }
+
+                Err(InnerError::new(
+                    *pos,
+                    &format!("cannot access property `{}` of `{}`", name, object),
+                )
+                .into())
             }
             Expr::Set(object, name, value) => {
                 let object = &object.evaluate(Rc::clone(&env), locals)?;

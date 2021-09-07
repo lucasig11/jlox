@@ -30,6 +30,10 @@ impl LoxClass {
     pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {
         self.methods.get(name)
     }
+
+    pub fn find_static(&self, name: &str) -> LoxResult<Rc<LoxValue>> {
+        todo!("attempt to call static method `{}`", name)
+    }
 }
 
 impl LoxCallable for LoxClass {
