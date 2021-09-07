@@ -37,30 +37,25 @@ impl LoxClass {
     }
 
     pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {
-        self.methods.get(name).or_else(|| {
-            // if we have a superclass
-            self.superclass.as_ref().and_then(|superclass| {
-                // extract class from value
-                if let LoxValue::Callable(ref c) = **superclass {
-                    return c
-                        .as_any()
-                        .downcast_ref::<LoxClass>()
-                        .unwrap()
-                        .find_method(name);
-                }
-                None
-            })
+        self.methods.get(name).or_else(|| match self.superclass {
+            Some(ref superclass) => superclass.as_class().ok().and_then(|c| c.find_method(name)),
+            _ => None,
         })
     }
 
     pub fn find_static(&self, name: &str) -> LoxResult<Rc<LoxValue>> {
         match self.static_methods.get(name) {
-            Some(f) => Ok(Rc::new(LoxValue::Callable(Rc::new(f.to_owned())))),
-            None => Err(LoxError::Generic(format!(
-                "static method `{}` not found for `{}` class",
-                name, self.name
-            ))),
+            Some(f) => return Ok(Rc::new(LoxValue::Callable(Rc::new(f.to_owned())))),
+            None => {
+                if let Some(ref superclass) = self.superclass {
+                    return superclass.as_class()?.find_static(name);
+                }
+            }
         }
+        Err(LoxError::Generic(format!(
+            "static method `{}` not found for `{}` class",
+            name, self.name
+        )))
     }
 }
 

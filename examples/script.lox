@@ -80,3 +80,8 @@ class Math {
 }
 
 print Math.square(2);
+
+class Geometry extends Math {}
+
+// Static methods are also inherited
+print Geometry.square(2);
