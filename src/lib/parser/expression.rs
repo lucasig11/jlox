@@ -43,7 +43,6 @@ impl Expr {
         locals: &HashMap<Expr, usize>,
     ) -> LoxResult<Rc<LoxValue>> {
         let pos = &self.position();
-
         let var_lookup = |name, expr| {
             if let Some(idx) = locals.get(expr) {
                 return env.get_at(*idx, name);
@@ -129,7 +128,6 @@ impl Expr {
             Expr::Variable(ref name) => var_lookup(&name.to_string(), self),
             Expr::Assign(name, val) => {
                 let val = val.evaluate(Rc::clone(&env), locals)?;
-
                 if let Some(idx) = locals.get(self) {
                     env.assign_at(*idx, &name.to_string(), &val)?;
                 } else {
@@ -174,7 +172,6 @@ impl Expr {
                 if let LoxValue::Instance(ref i) = **object {
                     let value = value.evaluate(Rc::clone(&env), locals)?;
                     (*i).set(name, &value)?;
-                    dbg!(&env);
                     return Ok(value);
                 }
                 Err(InnerError::new(*pos, "only instances have fields").into())

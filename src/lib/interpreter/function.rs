@@ -49,17 +49,17 @@ impl LoxFunction {
 impl LoxCallable for LoxFunction {
     fn call(
         &self,
-        env: Rc<Environment>,
+        _: Rc<Environment>,
         locals: &HashMap<Expr, usize>,
         args: &[Rc<LoxValue>],
     ) -> LoxResult<Rc<LoxValue>> {
-        let env = Environment::from(Rc::clone(&self.closure));
+        let env = Rc::new(Environment::from(Rc::clone(&self.closure)));
         if let Stmt::Function(_name, params, body) = &self.declaration {
             for (ident, val) in params.iter().zip(args) {
                 let val = (**val).to_owned();
                 env.define(&ident.to_string(), val)
             }
-            if let Err(err) = body.execute(Rc::new(env), locals, &mut std::io::stdout()) {
+            if let Err(err) = body.execute(Rc::clone(&env), locals, &mut std::io::stdout()) {
                 // Capture the return value that is unwinding the call stack
                 if let LoxError::Return(r) = err {
                     return Ok(Rc::new(r.val));

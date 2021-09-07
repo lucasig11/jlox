@@ -58,7 +58,7 @@ impl Stmt {
             Stmt::Block(stmts) => {
                 let scope = Rc::new(Environment::from(env));
                 for stmt in stmts {
-                    stmt.execute(scope.clone(), locals, writer)?;
+                    stmt.execute(Rc::clone(&scope), locals, writer)?;
                 }
             }
             Stmt::If(condition, then_branch, else_branch) => {

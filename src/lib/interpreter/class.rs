@@ -41,9 +41,9 @@ impl LoxCallable for LoxClass {
     ) -> LoxResult<Rc<LoxValue>> {
         let instance = LoxInstance::new(self.clone());
         if let Some(constructor) = self.find_method("init") {
-            constructor
+            return constructor
                 .bind(&instance)?
-                .call(Rc::clone(&env), locals, args)?;
+                .call(Rc::clone(&env), locals, args);
         }
 
         Ok(Rc::new(LoxValue::Instance(instance)))
