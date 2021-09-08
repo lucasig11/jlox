@@ -388,8 +388,9 @@ impl<'a> Parser<'a> {
         if self.matches(Punctuator::Assign) {
             let val = self.assignment()?;
             return match expr {
-                Expr::Variable(name) => Ok(Expr::Assign(name, val.into())),
-                Expr::Get(object, name) => Ok(Expr::Set(object, name, val.into())),
+                Expr::Variable(name) => Ok(Expr::Assign(name, Box::new(val))),
+                Expr::Get(object, name) => Ok(Expr::Set(object, name, Box::new(val))),
+                Expr::ArrayIndex(name, idx) => Ok(Expr::ArrayAssign(name, idx, Box::new(val))),
                 _ => Err(InnerError::new(expr.position(), "invalid assigment target").into()),
             };
         }

@@ -37,6 +37,8 @@ pub(crate) enum Expr {
     Array(Token, Vec<Expr>),
     /// ArrayIndex (name: Token, idx: Expr)
     ArrayIndex(Token, Box<Expr>),
+    /// ArrayAssing (name: Token, idx: Expr, val: Expr)
+    ArrayAssign(Token, Box<Expr>, Box<Expr>),
 }
 
 impl Expr {
@@ -234,6 +236,24 @@ impl Expr {
                 }
                 Err(InnerError::new(*pos, "attempt to index unindexable type").into())
             }
+            Expr::ArrayAssign(name, idx, val) => {
+                let name = var_lookup(&name.to_string(), self)?;
+                let idx = match *idx.evaluate(Rc::clone(&env), locals)? {
+                    LoxValue::Integer(i) if i >= 0 => i as usize,
+                    _ => return Ok(Rc::new(LoxValue::Nil)),
+                };
+                let value = val.evaluate(env, locals)?;
+                if let LoxValue::Array(ref vec) = *name {
+                    return match vec.borrow_mut().get_mut(idx) {
+                        Some(curr) => {
+                            *curr = Rc::clone(&value);
+                            Ok(value)
+                        }
+                        None => Ok(Rc::new(LoxValue::Nil)),
+                    };
+                }
+                Err(InnerError::new(*pos, "attempt to index unindexable type").into())
+            }
         }
     }
 
@@ -263,6 +283,7 @@ impl Expr {
                 *tk.span()
             }
             Expr::ArrayIndex(name, idx) => Span::new(name.span().start(), idx.position().end()),
+            Expr::ArrayAssign(name, _, val) => Span::new(name.span().start(), val.position().end()),
         }
     }
 

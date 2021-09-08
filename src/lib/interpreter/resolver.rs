@@ -177,6 +177,10 @@ impl Resolvable for Expr {
                 }
             },
             Expr::ArrayIndex(_, idx) => resolver.resolve(&**idx)?,
+            Expr::ArrayAssign(_, idx, val) => {
+                resolver.resolve(&**idx)?;
+                resolver.resolve(&**val)?;
+            }
         }
         Ok(())
     }
