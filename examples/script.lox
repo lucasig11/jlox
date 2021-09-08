@@ -85,3 +85,10 @@ class Geometry extends Math {}
 
 // Static methods are also inherited
 print Geometry.square(2);
+
+
+// Multiple inheritance
+class Entity {}
+class Controllable {}
+class Player extends Entity + Controllable {}
+
