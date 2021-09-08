@@ -34,6 +34,8 @@ pub(crate) enum Expr {
     This(Token),
     /// Variable expression (name: Token)
     Variable(Token),
+    /// Array (start_token: Token, values: Vec<Expr>)
+    Array(Token, Vec<Expr>),
 }
 
 impl Expr {
@@ -210,6 +212,13 @@ impl Expr {
                     .bind(object.as_instance()?)
                     .map(|f| Rc::new(LoxValue::Callable(Rc::new(f))))
             }
+            Expr::Array(_, values) => {
+                let values: Vec<_> = values
+                    .iter()
+                    .map(|val| val.evaluate(Rc::clone(&env), locals))
+                    .collect::<LoxResult<_>>()?;
+                Ok(Rc::new(LoxValue::Array(values)))
+            }
         }
     }
 
@@ -231,6 +240,12 @@ impl Expr {
                     return Span::new(expr.position().start(), arg.position().end());
                 }
                 Span::new(expr.position().start(), tk.span().end())
+            }
+            Expr::Array(tk, values) => {
+                if let Some(val) = values.last() {
+                    return Span::new(tk.span().start(), val.position().end());
+                }
+                *tk.span()
             }
         }
     }

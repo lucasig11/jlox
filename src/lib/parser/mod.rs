@@ -534,6 +534,18 @@ impl<'a> Parser<'a> {
                     )
                     .into())
                 }
+                TokenKind::Punctuator(Punctuator::OpenBracket) => {
+                    self.inner.advance();
+                    let mut values = Vec::new();
+                    while !self.check(Punctuator::CloseBracket) {
+                        values.push(self.expression()?);
+                        if !self.matches(Punctuator::Comma) {
+                            break;
+                        }
+                    }
+                    self.consume(Punctuator::CloseBracket, "expected `]` after array")?;
+                    return Ok(Expr::Array(tk.to_owned(), values));
+                }
                 _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
             };
             self.inner.advance();
