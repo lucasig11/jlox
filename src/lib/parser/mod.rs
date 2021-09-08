@@ -124,6 +124,11 @@ impl<'a> Parser<'a> {
 
         let superclass = if self.matches(Keyword::Extends) {
             let name = self.consume_ident("expected superclass")?;
+
+            while self.matches(Punctuator::Add) {
+                let _name = self.consume_ident("expected superclass name after `+`")?;
+            }
+
             Some(Expr::Variable(name.to_owned()))
         } else {
             None
