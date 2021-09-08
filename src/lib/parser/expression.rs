@@ -4,7 +4,7 @@ use crate::lib::{
     position::Span,
     token::{Keyword, Punctuator, Token, TokenKind},
 };
-use std::{collections::HashMap, convert::TryInto, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, convert::TryInto, rc::Rc};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 /// Language expressions
@@ -218,7 +218,7 @@ impl Expr {
                     .iter()
                     .map(|val| val.evaluate(Rc::clone(&env), locals))
                     .collect::<LoxResult<_>>()?;
-                Ok(Rc::new(LoxValue::Array(values)))
+                Ok(Rc::new(LoxValue::Array(RefCell::new(values))))
             }
             Expr::ArrayIndex(name, idx) => {
                 let name = var_lookup(&name.to_string(), self)?;
@@ -227,7 +227,7 @@ impl Expr {
                     _ => return Ok(Rc::new(LoxValue::Nil)),
                 };
                 if let LoxValue::Array(ref vec) = *name {
-                    return match vec.get(idx) {
+                    return match vec.borrow().get(idx) {
                         Some(val) => Ok(Rc::clone(val)),
                         None => Ok(Rc::new(LoxValue::Nil)),
                     };
