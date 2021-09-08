@@ -1,6 +1,6 @@
 use crate::lib::{
     error::*,
-    interpreter::{Environment, LoxClass, LoxValue},
+    interpreter::{Environment, LoxValue},
     position::Span,
     token::{Keyword, Punctuator, Token, TokenKind},
 };
@@ -171,12 +171,8 @@ impl Expr {
                     return i.get(name);
                 }
 
-                if let LoxValue::Callable(class) = &*object {
-                    if let Some(class) = class.as_any().downcast_ref::<LoxClass>() {
-                        return class
-                            .find_static(&name.to_string())
-                            .map_err(|e| InnerError::new(*pos, &e.to_string()).into());
-                    }
+                if let Ok(class) = object.as_class() {
+                    return class.find_static(&name.to_string());
                 }
 
                 Err(InnerError::new(
