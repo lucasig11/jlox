@@ -134,6 +134,7 @@ impl Resolvable for Expr {
                 resolver.resolve(&**callee)?;
                 resolver.resolve(args)?;
             }
+            Expr::Array(_, vals) => resolver.resolve(vals)?,
             Expr::Grouping(expr) => resolver.resolve(&**expr)?,
             Expr::Literal(_) => (),
             Expr::Logical(lhs, _, rhs) => {
