@@ -115,6 +115,8 @@ impl<'a> Lexer<'a> {
                 ')' => self.add_token(CloseParen),
                 '{' => self.add_token(OpenBlock),
                 '}' => self.add_token(CloseBlock),
+                '[' => self.add_token(OpenBracket),
+                ']' => self.add_token(CloseBracket),
                 ',' => self.add_token(Comma),
                 '.' => self.add_token(Dot),
                 ';' => self.add_token(Semicolon),
