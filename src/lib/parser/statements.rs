@@ -91,11 +91,9 @@ impl Stmt {
 
                 let superclass = if let Some(superclass) = &superclass {
                     let superclass = superclass.evaluate(Rc::clone(&env), locals)?;
-                    if let LoxValue::Callable(f) = &*superclass {
-                        if f.as_any().downcast_ref::<LoxClass>().is_none() {
-                            return Err(InnerError::new(*pos, "superclass must be a class").into());
-                        }
-                    }
+                    superclass.as_class().map_err(|_| -> LoxError {
+                        InnerError::new(*pos, "superclass must be a class").into()
+                    })?;
                     Some(superclass)
                 } else {
                     None
