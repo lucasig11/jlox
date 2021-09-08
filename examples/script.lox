@@ -1,5 +1,12 @@
 
+// Arrays
 let arr = [1, 2, 3, 4];
+print arr;
+
+// For loop
+for (let i = 0; i <= 2; i = i + 1) {
+	a[i] = a[i] * 2;
+}
 print arr;
 
 // Functions
@@ -9,12 +16,6 @@ fn fib(n) {
 	}
 	return fib(n - 2) + fib(n - 1);
 }
-
-// For loop
-for (let i = 0; i < 8; i = i + 1) {
-  print fib(i);
-}
-
 
 // Closures
 fn makeCounter() {
@@ -32,20 +33,7 @@ let counter = makeCounter();
 counter();
 counter();
 
-let a = "global";
-{
-  fn showA() {
-    print a;
-  }
-
-  showA();
-  let a = "block";
-  showA();
-  print a;
-}
-
 // Class
-
 class Food {
   eat() {
     print "eating some food";
