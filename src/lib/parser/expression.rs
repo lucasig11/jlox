@@ -8,7 +8,6 @@ use std::{collections::HashMap, convert::TryInto, rc::Rc};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 /// Language expressions
-#[allow(dead_code)]
 pub(crate) enum Expr {
     /// Binary expression (Expr, Operator, Expr)
     Binary(Box<Expr>, Token, Box<Expr>),
@@ -36,6 +35,8 @@ pub(crate) enum Expr {
     Variable(Token),
     /// Array (start_token: Token, values: Vec<Expr>)
     Array(Token, Vec<Expr>),
+    /// ArrayIndex (name: Token, idx: Expr)
+    ArrayIndex(Token, Box<Expr>),
 }
 
 impl Expr {
@@ -204,7 +205,7 @@ impl Expr {
                     .find_method(&method.to_string())
                     .ok_or_else(|| {
                         InnerError::new(
-                            *method.span(),
+                            *pos,
                             &format!("undefined property `{}`", method.to_string()),
                         )
                     })?;
@@ -218,6 +219,20 @@ impl Expr {
                     .map(|val| val.evaluate(Rc::clone(&env), locals))
                     .collect::<LoxResult<_>>()?;
                 Ok(Rc::new(LoxValue::Array(values)))
+            }
+            Expr::ArrayIndex(name, idx) => {
+                let name = var_lookup(&name.to_string(), self)?;
+                let idx = match *idx.evaluate(env, locals)? {
+                    LoxValue::Integer(i) if i >= 0 => i as usize,
+                    _ => return Ok(Rc::new(LoxValue::Nil)),
+                };
+                if let LoxValue::Array(ref vec) = *name {
+                    return match vec.get(idx) {
+                        Some(val) => Ok(Rc::clone(val)),
+                        None => Ok(Rc::new(LoxValue::Nil)),
+                    };
+                }
+                Err(InnerError::new(*pos, "attempt to index unindexable type").into())
             }
         }
     }
@@ -247,6 +262,7 @@ impl Expr {
                 }
                 *tk.span()
             }
+            Expr::ArrayIndex(name, idx) => Span::new(name.span().start(), idx.position().end()),
         }
     }
 

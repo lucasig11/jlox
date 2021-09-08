@@ -507,22 +507,28 @@ impl<'a> Parser<'a> {
 
     /// Parses primary expressions (literals, groups)
     fn primary(&self) -> LoxResult<Expr> {
-        if let Some(tk) = self.inner.peek() {
+        if let Some(tk) = self.inner.advance() {
             let exp = match tk.kind() {
                 TokenKind::BooleanLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::StringLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::NumericLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::Nil) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::This) => Expr::This(tk.to_owned()),
-                TokenKind::Identifier(_) => Expr::Variable(tk.to_owned()),
+                TokenKind::Identifier(_) => {
+                    if self.matches(Punctuator::OpenBracket) {
+                        let idx = self.expression()?;
+                        self.consume(Punctuator::CloseBracket, "expected `]` after index")?;
+                        idx.to_string();
+                        return Ok(Expr::ArrayIndex(tk.to_owned(), Box::new(idx)));
+                    }
+                    Expr::Variable(tk.to_owned())
+                }
                 TokenKind::Keyword(Keyword::Super) => {
-                    self.inner.advance();
                     self.consume(Punctuator::Dot, "expected `.` after `super`")?;
                     let method = self.consume_ident("expected superclass method name")?;
                     return Ok(Expr::Super(tk.to_owned(), method.to_owned()));
                 }
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
-                    self.inner.advance();
                     let expr = self.expression()?;
                     self.consume(Punctuator::CloseParen, "expected `)` after expression")?;
                     return Ok(Expr::Grouping(expr.into()));
@@ -535,7 +541,6 @@ impl<'a> Parser<'a> {
                     .into())
                 }
                 TokenKind::Punctuator(Punctuator::OpenBracket) => {
-                    self.inner.advance();
                     let mut values = Vec::new();
                     while !self.check(Punctuator::CloseBracket) {
                         values.push(self.expression()?);
@@ -548,7 +553,6 @@ impl<'a> Parser<'a> {
                 }
                 _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
             };
-            self.inner.advance();
             return Ok(exp);
         }
         Err(InnerError::new(

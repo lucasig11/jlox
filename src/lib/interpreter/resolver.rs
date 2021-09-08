@@ -176,6 +176,7 @@ impl Resolvable for Expr {
                     .into())
                 }
             },
+            Expr::ArrayIndex(_, idx) => resolver.resolve(&**idx)?,
         }
         Ok(())
     }
