@@ -1,4 +1,7 @@
 
+let arr = [1, 2, 3, 4];
+print arr;
+
 // Functions
 fn fib(n) {
 	if (n <= 1) {
@@ -57,10 +60,8 @@ class Bacon extends Food {
 	}
 }
 
-Bacon().eat(); 
-
 // Bound methods
-class Cake {
+class Cake extends Bacon {
   init(arg) {
 	this.flavor = arg;
   }
@@ -68,9 +69,16 @@ class Cake {
   taste(adjective) {
     print "The " + this.flavor + " cake is " + adjective + "!";
   }
+
+  eat() {
+  	super.eat();
+	print "but it's a cake";
+  }
 }
 
-Cake("German chocolate").taste("delicious"); 
+let cake = Cake("bacon");
+cake.eat();
+cake.taste("delicious"); 
 
 // Static methods 
 class Math {
