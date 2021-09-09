@@ -53,8 +53,8 @@ impl Stmt {
             Stmt::Print(expr) => {
                 writer.write_all(format!("{}\n", expr.evaluate(env, locals)?).as_bytes())?;
             }
-            Stmt::Variable(name, initializer) => {
-                for (name, initializer) in name.iter().zip(initializer) {
+            Stmt::Variable(names, initializers) => {
+                for (name, initializer) in names.iter().zip(initializers) {
                     let value = match initializer {
                         Some(initializer) => initializer.evaluate(Rc::clone(&env), locals)?,
                         None => Rc::new(LoxValue::Nil),
@@ -120,7 +120,7 @@ impl Stmt {
                 let to_map = |v: &Vec<Stmt>, can_be_init: bool| {
                     (*v).iter()
                         .map(|el| {
-                            let is_initializer = el.to_string().eq("init");
+                            let is_initializer = el.name().eq("init");
                             if !can_be_init && is_initializer {
                                 return Err(
                                     InnerError::new(*pos, "constructor cannot be static").into()
@@ -129,9 +129,9 @@ impl Stmt {
                             let func = LoxFunction::new(
                                 el.to_owned(),
                                 Rc::clone(&env),
-                                el.to_string().eq("init"),
+                                el.name().eq("init"),
                             )?;
-                            Ok((el.to_string(), func))
+                            Ok((el.name(), func))
                         })
                         .collect::<LoxResult<HashMap<_, _>>>()
                 };
@@ -149,6 +149,14 @@ impl Stmt {
             }
         };
         Ok(())
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            Stmt::Function(name, ..) => name.to_string(),
+            Stmt::Class(name, ..) => name.to_string(),
+            _ => self.to_string(),
+        }
     }
 }
 
