@@ -1,11 +1,16 @@
 
+// Variables
+let foo, bar = "foo", "bar";
+let bar, foo = foo, bar;
+print bar + foo;
+
 // Arrays
 let arr = [1, 2, 3, 4];
 print arr;
 
 // For loop
 for (let i = 0; i <= 2; i = i + 1) {
-	a[i] = a[i] * 2;
+	arr[i] = arr[i] * 2;
 }
 print arr;
 
