@@ -554,7 +554,6 @@ impl<'a> Parser<'a> {
                     if self.matches(Punctuator::OpenBracket) {
                         let idx = self.expression()?;
                         self.consume(Punctuator::CloseBracket, "expected `]` after index")?;
-                        idx.to_string();
                         return Ok(Expr::Index(tk.to_owned(), Box::new(idx)));
                     }
                     Expr::Variable(tk.to_owned())
