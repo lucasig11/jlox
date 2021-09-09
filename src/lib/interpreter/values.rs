@@ -4,6 +4,7 @@ use crate::lib::{
     token::{Keyword, Numeric, TokenKind},
 };
 use std::{
+    cell::RefCell,
     cmp::PartialEq,
     collections::HashMap,
     convert::TryFrom,
@@ -21,6 +22,7 @@ pub(crate) enum LoxValue {
     Decimal(f64),
     Integer(isize),
     Boolean(bool),
+    Array(RefCell<Vec<Rc<LoxValue>>>),
     Callable(Rc<dyn LoxCallable>),
     Instance(LoxInstance),
 }
@@ -144,6 +146,18 @@ impl std::fmt::Display for LoxValue {
             LoxValue::Instance(instance) => {
                 write!(f, "{}", instance)
             }
+            LoxValue::Array(values) => {
+                write!(
+                    f,
+                    "[{}]",
+                    values
+                        .borrow()
+                        .iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
         }
     }
 }
@@ -158,6 +172,18 @@ impl std::fmt::Debug for LoxValue {
             LoxValue::Nil => write!(f, "nil"),
             LoxValue::Instance(instance) => {
                 write!(f, "{}", instance)
+            }
+            LoxValue::Array(values) => {
+                write!(
+                    f,
+                    "[{}]",
+                    values
+                        .borrow()
+                        .iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             }
         }
     }

@@ -1,14 +1,13 @@
 use crate::lib::{
     error::*,
-    interpreter::{Environment, LoxClass, LoxValue},
+    interpreter::{Environment, LoxValue},
     position::Span,
     token::{Keyword, Punctuator, Token, TokenKind},
 };
-use std::{collections::HashMap, convert::TryInto, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, convert::TryInto, rc::Rc};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 /// Language expressions
-#[allow(dead_code)]
 pub(crate) enum Expr {
     /// Binary expression (Expr, Operator, Expr)
     Binary(Box<Expr>, Token, Box<Expr>),
@@ -34,6 +33,12 @@ pub(crate) enum Expr {
     This(Token),
     /// Variable expression (name: Token)
     Variable(Token),
+    /// Array (start_token: Token, values: Vec<Expr>)
+    Array(Token, Vec<Expr>),
+    /// ArrayIndex (name: Token, idx: Expr)
+    ArrayIndex(Token, Box<Expr>),
+    /// ArrayAssing (name: Token, idx: Expr, val: Expr)
+    ArrayAssign(Token, Box<Expr>, Box<Expr>),
 }
 
 impl Expr {
@@ -166,12 +171,8 @@ impl Expr {
                     return i.get(name);
                 }
 
-                if let LoxValue::Callable(class) = &*object {
-                    if let Some(class) = class.as_any().downcast_ref::<LoxClass>() {
-                        return class
-                            .find_static(&name.to_string())
-                            .map_err(|e| InnerError::new(*pos, &e.to_string()).into());
-                    }
+                if let Ok(class) = object.as_class() {
+                    return class.find_static(&name.to_string());
                 }
 
                 Err(InnerError::new(
@@ -202,13 +203,52 @@ impl Expr {
                     .find_method(&method.to_string())
                     .ok_or_else(|| {
                         InnerError::new(
-                            *method.span(),
+                            *pos,
                             &format!("undefined property `{}`", method.to_string()),
                         )
                     })?;
                 method
                     .bind(object.as_instance()?)
                     .map(|f| Rc::new(LoxValue::Callable(Rc::new(f))))
+            }
+            Expr::Array(_, values) => {
+                let values: Vec<_> = values
+                    .iter()
+                    .map(|val| val.evaluate(Rc::clone(&env), locals))
+                    .collect::<LoxResult<_>>()?;
+                Ok(Rc::new(LoxValue::Array(RefCell::new(values))))
+            }
+            Expr::ArrayIndex(name, idx) => {
+                let name = var_lookup(&name.to_string(), self)?;
+                let idx = match *idx.evaluate(env, locals)? {
+                    LoxValue::Integer(i) if i >= 0 => i as usize,
+                    _ => return Ok(Rc::new(LoxValue::Nil)),
+                };
+                if let LoxValue::Array(ref vec) = *name {
+                    return match vec.borrow().get(idx) {
+                        Some(val) => Ok(Rc::clone(val)),
+                        None => Ok(Rc::new(LoxValue::Nil)),
+                    };
+                }
+                Err(InnerError::new(*pos, "attempt to index unindexable type").into())
+            }
+            Expr::ArrayAssign(name, idx, val) => {
+                let name = var_lookup(&name.to_string(), self)?;
+                let idx = match *idx.evaluate(Rc::clone(&env), locals)? {
+                    LoxValue::Integer(i) if i >= 0 => i as usize,
+                    _ => return Ok(Rc::new(LoxValue::Nil)),
+                };
+                let value = val.evaluate(env, locals)?;
+                if let LoxValue::Array(ref vec) = *name {
+                    return match vec.borrow_mut().get_mut(idx) {
+                        Some(curr) => {
+                            *curr = Rc::clone(&value);
+                            Ok(value)
+                        }
+                        None => Ok(Rc::new(LoxValue::Nil)),
+                    };
+                }
+                Err(InnerError::new(*pos, "attempt to index unindexable type").into())
             }
         }
     }
@@ -232,6 +272,14 @@ impl Expr {
                 }
                 Span::new(expr.position().start(), tk.span().end())
             }
+            Expr::Array(tk, values) => {
+                if let Some(val) = values.last() {
+                    return Span::new(tk.span().start(), val.position().end());
+                }
+                *tk.span()
+            }
+            Expr::ArrayIndex(name, idx) => Span::new(name.span().start(), idx.position().end()),
+            Expr::ArrayAssign(name, _, val) => Span::new(name.span().start(), val.position().end()),
         }
     }
 

@@ -29,11 +29,13 @@ impl Resolvable for Stmt {
     fn resolve(&self, resolver: &Resolver) -> LoxResult<()> {
         match &self {
             Stmt::Variable(name, initializer) => {
-                resolver.declare(name);
-                if !initializer.is_nil_expr() {
-                    resolver.resolve(initializer)?;
+                for (name, initializer) in name.iter().zip(initializer) {
+                    resolver.declare(name);
+                    if let Some(initializer) = initializer {
+                        resolver.resolve(initializer)?;
+                    }
+                    resolver.define(name);
                 }
-                resolver.define(name);
             }
             Stmt::Block(statements) => {
                 resolver.begin_scope();
@@ -134,6 +136,7 @@ impl Resolvable for Expr {
                 resolver.resolve(&**callee)?;
                 resolver.resolve(args)?;
             }
+            Expr::Array(_, vals) => resolver.resolve(vals)?,
             Expr::Grouping(expr) => resolver.resolve(&**expr)?,
             Expr::Literal(_) => (),
             Expr::Logical(lhs, _, rhs) => {
@@ -175,6 +178,11 @@ impl Resolvable for Expr {
                     .into())
                 }
             },
+            Expr::ArrayIndex(_, idx) => resolver.resolve(&**idx)?,
+            Expr::ArrayAssign(_, idx, val) => {
+                resolver.resolve(&**idx)?;
+                resolver.resolve(&**val)?;
+            }
         }
         Ok(())
     }

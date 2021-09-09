@@ -163,9 +163,6 @@ impl<'a> Parser<'a> {
     }
 
     /// Parses a function declaration.
-    ///
-    /// The `kind` here does not correspond to the TokenKind, but to wether we're declaring a
-    /// function or a class method.
     fn func_decl(&self, kind: &str) -> LoxResult<Stmt> {
         let name = self.consume_ident(&format!("Expected {} name", &kind))?;
         self.consume(
@@ -203,23 +200,38 @@ impl<'a> Parser<'a> {
     }
 
     fn var_decl(&self) -> LoxResult<Stmt> {
-        let name = self.consume_ident("expected identifier")?;
-        let initializer = if self.matches(Punctuator::Assign) {
-            self.expression()?
-        } else {
-            // Unwrapping here is safe bc we definitely have a `previous` token in the buffer, the
-            // variable identifier.
-            Expr::Literal(Token::new(
-                Keyword::Nil,
-                *self.inner.previous().unwrap().span(),
-            ))
-        };
+        let mut names = Vec::new();
+        loop {
+            names.push(self.consume_ident("expected identifier")?.to_owned());
+            if !self.matches(Punctuator::Comma) {
+                break;
+            }
+        }
+
+        let mut initializers = Vec::with_capacity(names.len());
+        if self.matches(Punctuator::Assign) {
+            loop {
+                initializers.push(Some(self.expression()?));
+                if !self.matches(Punctuator::Comma) {
+                    break;
+                }
+            }
+        }
+
+        use std::cmp::Ordering;
+        if let Ordering::Less = initializers.len().cmp(&names.len()) {
+            let diff = names.len() - initializers.len();
+            for _ in 0..=diff {
+                initializers.push(None);
+            }
+        }
 
         self.consume(
             Punctuator::Semicolon,
             "expected `;` after variable declaration",
         )?;
-        Ok(Stmt::Variable(name.to_owned(), initializer))
+
+        Ok(Stmt::Variable(names, initializers))
     }
 
     fn statement(&self) -> LoxResult<Stmt> {
@@ -393,8 +405,9 @@ impl<'a> Parser<'a> {
         if self.matches(Punctuator::Assign) {
             let val = self.assignment()?;
             return match expr {
-                Expr::Variable(name) => Ok(Expr::Assign(name, val.into())),
-                Expr::Get(object, name) => Ok(Expr::Set(object, name, val.into())),
+                Expr::Variable(name) => Ok(Expr::Assign(name, Box::new(val))),
+                Expr::Get(object, name) => Ok(Expr::Set(object, name, Box::new(val))),
+                Expr::ArrayIndex(name, idx) => Ok(Expr::ArrayAssign(name, idx, Box::new(val))),
                 _ => Err(InnerError::new(expr.position(), "invalid assigment target").into()),
             };
         }
@@ -512,22 +525,28 @@ impl<'a> Parser<'a> {
 
     /// Parses primary expressions (literals, groups)
     fn primary(&self) -> LoxResult<Expr> {
-        if let Some(tk) = self.inner.peek() {
+        if let Some(tk) = self.inner.advance() {
             let exp = match tk.kind() {
                 TokenKind::BooleanLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::StringLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::NumericLiteral(_) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::Nil) => Expr::Literal(tk.to_owned()),
                 TokenKind::Keyword(Keyword::This) => Expr::This(tk.to_owned()),
-                TokenKind::Identifier(_) => Expr::Variable(tk.to_owned()),
+                TokenKind::Identifier(_) => {
+                    if self.matches(Punctuator::OpenBracket) {
+                        let idx = self.expression()?;
+                        self.consume(Punctuator::CloseBracket, "expected `]` after index")?;
+                        idx.to_string();
+                        return Ok(Expr::ArrayIndex(tk.to_owned(), Box::new(idx)));
+                    }
+                    Expr::Variable(tk.to_owned())
+                }
                 TokenKind::Keyword(Keyword::Super) => {
-                    self.inner.advance();
                     self.consume(Punctuator::Dot, "expected `.` after `super`")?;
                     let method = self.consume_ident("expected superclass method name")?;
                     return Ok(Expr::Super(tk.to_owned(), method.to_owned()));
                 }
                 TokenKind::Punctuator(Punctuator::OpenParen) => {
-                    self.inner.advance();
                     let expr = self.expression()?;
                     self.consume(Punctuator::CloseParen, "expected `)` after expression")?;
                     return Ok(Expr::Grouping(expr.into()));
@@ -539,9 +558,19 @@ impl<'a> Parser<'a> {
                     )
                     .into())
                 }
+                TokenKind::Punctuator(Punctuator::OpenBracket) => {
+                    let mut values = Vec::new();
+                    while !self.check(Punctuator::CloseBracket) {
+                        values.push(self.expression()?);
+                        if !self.matches(Punctuator::Comma) {
+                            break;
+                        }
+                    }
+                    self.consume(Punctuator::CloseBracket, "expected `]` after array")?;
+                    return Ok(Expr::Array(tk.to_owned(), values));
+                }
                 _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
             };
-            self.inner.advance();
             return Ok(exp);
         }
         Err(InnerError::new(
@@ -683,12 +712,12 @@ mod test {
 
     #[test]
     fn parses_var_declaration() {
-        let src = "let foo = true;";
+        let src = "let foo, bar = true, false;";
         let tokens = Lexer::new(src).scan_tokens().unwrap();
         let expr = Parser::new(&tokens).parse().unwrap();
 
         assert!(
-            matches!(&expr[0], Stmt::Variable(tk, expr) if &tk.to_string() == "foo" && &expr.to_string() == "true")
+            matches!(&expr[0], Stmt::Variable(tk, expr) if &tk[0].to_string() == "foo" && &expr[0].as_ref().unwrap().to_string() == "true")
         );
     }
 }
