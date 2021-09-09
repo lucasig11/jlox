@@ -24,8 +24,15 @@ pub(crate) enum Stmt {
     Function(Token, Vec<Token>, Box<Stmt>),
     /// Class statement(name, superclass: Expr::Variable, methods: Vec<Stmt::Function>)
     Class(Token, Option<Expr>, Vec<Stmt>, Vec<Stmt>),
-    /// Variable statement(name, initializer)
-    Variable(Token, Expr),
+    /// Variable declaration statement (names, initializers)
+    ///
+    /// Holds a vector because there can be more than one variable being declared at a time.
+    /// ```text
+    /// let a, b, c = 1, 2, 3;
+    /// let a, b, c;
+    /// let a, b, c = 1;
+    /// ```
+    Variable(Vec<Token>, Vec<Option<Expr>>),
     /// While statement(condition, body)
     While(Expr, Box<Stmt>),
     /// Block statement(statements)
@@ -47,13 +54,13 @@ impl Stmt {
                 writer.write_all(format!("{}\n", expr.evaluate(env, locals)?).as_bytes())?;
             }
             Stmt::Variable(name, initializer) => {
-                let value = if initializer.is_nil_expr() {
-                    Rc::new(LoxValue::Nil)
-                } else {
-                    initializer.evaluate(Rc::clone(&env), locals)?
-                };
-
-                env.define(&name.to_string(), value);
+                for (name, initializer) in name.iter().zip(initializer) {
+                    let value = match initializer {
+                        Some(initializer) => initializer.evaluate(Rc::clone(&env), locals)?,
+                        None => Rc::new(LoxValue::Nil),
+                    };
+                    env.define(&name.to_string(), value);
+                }
             }
             Stmt::Block(stmts) => {
                 let scope = Rc::new(Environment::from(env));
@@ -170,15 +177,15 @@ impl std::fmt::Display for Stmt {
             f,
             "{}",
             match &self {
-                Stmt::Expression(..) => "expression".to_string(),
-                Stmt::Print(..) => "print".to_string(),
-                Stmt::Return(..) => "return".to_string(),
-                Stmt::If(..) => "if".to_string(),
-                Stmt::Function(name, _, _) => name.to_string(),
-                Stmt::Class(..) => "class".to_string(),
-                Stmt::Variable(name, _) => name.to_string(),
-                Stmt::While(..) => "while".to_string(),
-                Stmt::Block(..) => "block".to_string(),
+                Stmt::Expression(..) => "expression",
+                Stmt::Print(..) => "print",
+                Stmt::Return(..) => "return",
+                Stmt::If(..) => "if",
+                Stmt::Function(..) => "function",
+                Stmt::Class(..) => "class",
+                Stmt::Variable(..) => "variable",
+                Stmt::While(..) => "while",
+                Stmt::Block(..) => "block",
             }
         )
     }
