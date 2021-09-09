@@ -54,12 +54,20 @@ impl Stmt {
                 writer.write_all(format!("{}\n", expr.evaluate(env, locals)?).as_bytes())?;
             }
             Stmt::Variable(names, initializers) => {
-                for (name, initializer) in names.iter().zip(initializers) {
-                    let value = match initializer {
-                        Some(initializer) => initializer.evaluate(Rc::clone(&env), locals)?,
-                        None => Rc::new(LoxValue::Nil),
-                    };
-                    env.define(&name.to_string(), value);
+                let variables: Vec<_> = names
+                    .iter()
+                    .zip(initializers)
+                    .map(|(name, initializer)| {
+                        let value = match initializer {
+                            Some(initializer) => initializer.evaluate(Rc::clone(&env), locals)?,
+                            None => Rc::new(LoxValue::Nil),
+                        };
+                        Ok((name.to_string(), value))
+                    })
+                    .collect::<LoxResult<_>>()?;
+
+                for (name, value) in variables {
+                    env.define(&name, value);
                 }
             }
             Stmt::Block(stmts) => {
