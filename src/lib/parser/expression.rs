@@ -172,7 +172,9 @@ impl Expr {
                 }
 
                 if let Ok(class) = object.as_class() {
-                    return class.find_static(&name.to_string());
+                    return class
+                        .find_static(&name.to_string())
+                        .map_err(|e| InnerError::new(*pos, &e.to_string()).into());
                 }
 
                 Err(InnerError::new(
