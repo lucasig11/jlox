@@ -125,23 +125,23 @@ impl Stmt {
                     env
                 };
 
-                let to_map = |v: &Vec<Stmt>, can_be_init: bool| {
+                let to_map = |v: &[Stmt], can_be_init: bool| {
                     (*v).iter()
                         .map(|el| {
-                            let is_initializer = el.name().eq("init");
+                            let declaration = el.to_owned();
+                            let func_name = declaration.name();
+                            let is_initializer = func_name.eq("init");
                             if !can_be_init && is_initializer {
                                 return Err(
                                     InnerError::new(*pos, "constructor cannot be static").into()
                                 );
                             }
-                            let func = LoxFunction::new(
-                                el.to_owned(),
-                                Rc::clone(&env),
-                                el.name().eq("init"),
-                            )?;
-                            Ok((el.name(), func))
+                            Ok((
+                                func_name,
+                                LoxFunction::new(declaration, Rc::clone(&env), is_initializer)?,
+                            ))
                         })
-                        .collect::<LoxResult<HashMap<_, _>>>()
+                        .collect::<LoxResult<_>>()
                 };
 
                 let static_methods = to_map(static_methods, false)?;
