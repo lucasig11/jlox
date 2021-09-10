@@ -38,6 +38,19 @@ let counter = makeCounter();
 counter();
 counter();
 
+// Pipe operator
+fn sub(a, b) {
+	return a - b;
+}
+
+fn mul(a, b) {
+	return a * b;
+}
+
+let i = 2 |> mul(4) |> sub(1);
+
+print i;
+
 // Class
 class Food {
   eat() {
@@ -86,3 +99,5 @@ class Geometry extends Math {}
 
 // Static methods are also inherited
 print Geometry.square(2);
+
+
