@@ -150,6 +150,12 @@ impl From<std::num::ParseFloatError> for LoxError {
     }
 }
 
+impl From<ReturnVal> for LoxError {
+    fn from(ret: ReturnVal) -> Self {
+        Self::Return(ret)
+    }
+}
+
 /// Repeats a char `n` times.
 fn pad(n: usize, ch: char) -> String {
     std::iter::repeat(ch).take(n).collect()

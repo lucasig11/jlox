@@ -180,15 +180,8 @@ impl ReturnVal {
     }
 }
 
-// FIXME: refactor this out of here
-impl From<ReturnVal> for LoxError {
-    fn from(ret: ReturnVal) -> Self {
-        Self::Return(ret)
-    }
-}
-
 impl std::fmt::Display for Stmt {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
             "{}",
