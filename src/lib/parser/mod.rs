@@ -391,7 +391,25 @@ impl<'a> Parser<'a> {
     /// Parses an expression.
     #[inline]
     fn expression(&self) -> LoxResult<Expr> {
-        self.assignment()
+        let mut expr = self.assignment()?;
+        while self.matches(Punctuator::Pipe) {
+            if let Expr::Call(callee, paren, args) = self.assignment()? {
+                let args = [expr]
+                    .iter()
+                    .chain(&args)
+                    .map(|x| x.to_owned())
+                    .collect::<Vec<_>>();
+
+                expr = Expr::Call(callee, paren, args);
+            } else {
+                return Err(InnerError::new(
+                    expr.position(),
+                    "cannot pipe into non-callable expression",
+                )
+                .into());
+            }
+        }
+        Ok(expr)
     }
 
     fn assignment(&self) -> LoxResult<Expr> {
