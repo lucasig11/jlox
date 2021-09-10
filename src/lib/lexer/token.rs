@@ -105,6 +105,7 @@ pub enum Punctuator {
     CloseBlock,
     OpenBracket,
     CloseBracket,
+    Pipe,
     Assign,
     AssignAdd,
     AssignSub,
@@ -157,6 +158,7 @@ impl std::fmt::Display for Punctuator {
                 Punctuator::LessThanOrEq => "<=",
                 Punctuator::Not => "!",
                 Punctuator::NotEq => "!=",
+                Punctuator::Pipe => "|>",
             }
         )
     }

@@ -105,6 +105,14 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
+    fn lex_pipe(&mut self) -> LoxResult<()> {
+        if let Some('>') = self.buffer.peek_next() {
+            self.buffer.next_column();
+            self.buffer.next();
+            self.add_token(Punctuator::Pipe);
+        }
+        Ok(())
+    }
     pub(crate) fn scan_tokens(mut self) -> LoxResult<Vec<Token>> {
         use Punctuator::*;
         while let Some(ch) = self.buffer.next() {
@@ -129,6 +137,7 @@ impl<'a> Lexer<'a> {
                 '<' => self.add_if_next('=', LessThanOrEq, LessThan, Self::add_token),
                 '/' => self.lex_slash()?,
                 '"' => self.lex_string()?,
+                '|' => self.lex_pipe()?,
                 _ if ch.is_digit(10) => self.lex_numeric(ch)?,
                 _ if ch.is_ascii_alphabetic() || ch.eq(&'_') => self.lex_identifier(ch)?,
                 err => {
