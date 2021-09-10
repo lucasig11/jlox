@@ -566,7 +566,7 @@ impl<'a> Parser<'a> {
                 }
                 TokenKind::Keyword(Keyword::Static) => {
                     return Err(InnerError::new(
-                        *tk.to_owned().span(),
+                        *tk.span(),
                         "cannot use static keyword outside of a class",
                     )
                     .into())
@@ -582,7 +582,11 @@ impl<'a> Parser<'a> {
                     self.consume(Punctuator::CloseBracket, "expected `]` after array")?;
                     return Ok(Expr::Array(tk.to_owned(), values));
                 }
-                _ => return Err(InnerError::new(*tk.to_owned().span(), "unexpected token").into()),
+                _ => {
+                    return Err(
+                        InnerError::new(*tk.span(), &*format!("unexpected token `{}`", tk)).into(),
+                    )
+                }
             };
             return Ok(exp);
         }
