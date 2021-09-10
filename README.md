@@ -50,7 +50,7 @@ hello.say();
 
 ```
 
-#### Run
+### Run
 [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) is required.
 ```shell
 cargo install --git https://github.com/lucasig11/jlox
@@ -62,17 +62,19 @@ jlox
 jlox examples/script.jlox
 ```
 
-#### Differences from the original implementation
+### Differences from the original implementation
 Functionality | Original | Ours
 :- | :-: | :-:
 Inheritance | `<` | `extends` 
 Variable declaration | `var` | `let`
 Function declaration | `fun` | `fn`
 Integer types | `double` | `32-bit int` and `64-bit float`
+Comma operator | `not implemented` | `let a, b = 1, 2;`
 Static methods | `not implemented` | `static`
+Pipe operator | `not implemented` | ```2 \|> mul(2) \|> sub(1)``` 
 If statement | ```if (true) // some code``` | ```if true { // some code }```
 
-#### Builtin functions
+### Builtin functions
 
 - **Clock**
     Returns the current system time as milliseconds.
