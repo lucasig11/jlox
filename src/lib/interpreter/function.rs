@@ -56,7 +56,7 @@ impl LoxCallable for LoxFunction {
         let env = Rc::new(Environment::from(Rc::clone(&self.closure)));
         if let Stmt::Function(_name, params, body) = &self.declaration {
             for (ident, val) in params.iter().zip(args) {
-                env.define(&ident.to_string(), Rc::clone(&val))
+                env.define(&ident.to_string(), Rc::clone(val))
             }
             if let Err(err) = body.execute(Rc::clone(&env), locals, &mut std::io::stdout()) {
                 // Capture the return value that is unwinding the call stack
