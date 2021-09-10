@@ -44,8 +44,14 @@ impl Span {
     /// Creates a new Span from two positions.
     #[inline]
     pub fn new(start: Position, end: Position) -> Self {
-        assert!(start <= end, "a span cannot start after its end");
-        Self { start, end }
+        if start < end {
+            Self {
+                start: end,
+                end: start,
+            }
+        } else {
+            Self { start, end }
+        }
     }
 
     /// Consumes `self` returning the start position.
