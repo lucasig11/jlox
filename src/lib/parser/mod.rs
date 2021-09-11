@@ -44,7 +44,8 @@
 //! term           → factor ( ( "-" | "+" ) factor )* ;
 //! factor         → unary ( ( "/" | "*" ) unary )* ;
 //!
-//! unary          → ( "!" | "-" ) unary | call ;
+//! unary          → ( "!" | "-" ) unary | pipe ;
+//! pipe           → call ( "|>" call)*;
 //! call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 //! primary        → "true" | "false" | "nil" | "this"
 //!                | NUMBER | STRING | IDENTIFIER | "(" expression ")"
@@ -391,24 +392,7 @@ impl<'a> Parser<'a> {
     /// Parses an expression.
     #[inline]
     fn expression(&self) -> LoxResult<Expr> {
-        let mut expr = self.assignment()?;
-        while self.matches(Punctuator::Pipe) {
-            if let Expr::Call(callee, paren, args) = self.assignment()? {
-                let args = [expr]
-                    .iter()
-                    .chain(&args)
-                    .map(|x| x.to_owned())
-                    .collect::<Vec<_>>();
-
-                expr = Expr::Call(callee, paren, args);
-            } else {
-                return Err(InnerError::new(
-                    expr.position(),
-                    "cannot pipe into non-callable expression",
-                )
-                .into());
-            }
-        }
+        let expr = self.assignment()?;
         Ok(expr)
     }
 
@@ -488,7 +472,29 @@ impl<'a> Parser<'a> {
             let rhs = self.unary()?;
             return Ok(Expr::Unary(op, rhs.into()));
         }
-        self.call()
+        self.pipe()
+    }
+
+    fn pipe(&self) -> LoxResult<Expr> {
+        let mut expr = self.call()?;
+        while self.matches(Punctuator::Pipe) {
+            if let Expr::Call(callee, paren, args) = self.call()? {
+                let args = [expr]
+                    .iter()
+                    .chain(&args)
+                    .map(|x| x.to_owned())
+                    .collect::<Vec<_>>();
+
+                expr = Expr::Call(callee, paren, args);
+            } else {
+                return Err(InnerError::new(
+                    expr.position(),
+                    "cannot pipe into non-callable expression",
+                )
+                .into());
+            }
+        }
+        Ok(expr)
     }
 
     /// Parses a function call (max. arity: 255).
