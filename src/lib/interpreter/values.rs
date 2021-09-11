@@ -206,9 +206,36 @@ impl Mul for LoxValue {
     type Output = LoxResult<Self>;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        check_or!(LoxValue::is_num, &self, &rhs; "operands must be numbers");
+        if check!(Self::is_num, &self, &rhs) {
+            return binop!(self, rhs, *);
+        }
+        if self.is_num() || rhs.is_num() {
+            let (num, oth) = if self.is_num() {
+                (self, rhs)
+            } else {
+                (rhs, self)
+            };
+            if !num.is_decimal() {
+                match oth {
+                    LoxValue::Array(ref vec) => {
+                        let new = std::iter::repeat(&(*vec.borrow()))
+                            .take(num.to_int() as usize)
+                            .flatten()
+                            .cloned()
+                            .collect::<Vec<_>>();
+                        return Ok(LoxValue::Array(RefCell::new(new)));
+                    }
+                    LoxValue::String(s) => {
+                        return Ok(LoxValue::String(s.repeat(num.to_int() as usize)))
+                    }
+                    _ => todo!(),
+                };
+            }
+        }
 
-        binop!(self, rhs, *)
+        Err(LoxError::Generic(
+            "invalid operands to multiplication expression".to_string(),
+        ))
     }
 }
 
