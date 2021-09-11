@@ -35,10 +35,10 @@ pub(crate) enum Expr {
     Variable(Token),
     /// Array (start_token: Token, values: Vec<Expr>)
     Array(Token, Vec<Expr>),
-    /// ArrayIndex (name: Token, idx: Expr)
-    ArrayIndex(Token, Box<Expr>),
+    /// Index (name: Token, idx: Expr)
+    Index(Token, Box<Expr>),
     /// ArrayAssing (name: Token, idx: Expr, val: Expr)
-    ArrayAssign(Token, Box<Expr>, Box<Expr>),
+    IndexAssign(Token, Box<Expr>, Box<Expr>),
 }
 
 impl Expr {
@@ -220,37 +220,42 @@ impl Expr {
                     .collect::<LoxResult<_>>()?;
                 Ok(Rc::new(LoxValue::Array(RefCell::new(values))))
             }
-            Expr::ArrayIndex(name, idx) => {
+            Expr::Index(name, idx) => {
                 let name = var_lookup(&name.to_string(), self)?;
                 let idx = match *idx.evaluate(env, locals)? {
                     LoxValue::Integer(i) if i >= 0 => i as usize,
                     _ => return Ok(Rc::new(LoxValue::Nil)),
                 };
-                if let LoxValue::Array(ref vec) = *name {
-                    return match vec.borrow().get(idx) {
+                match *name {
+                    LoxValue::Array(ref vec) => match vec.borrow().get(idx) {
                         Some(val) => Ok(Rc::clone(val)),
                         None => Ok(Rc::new(LoxValue::Nil)),
-                    };
+                    },
+                    _ => Err(InnerError::new(*pos, "attempt to index unindexable type").into()),
                 }
-                Err(InnerError::new(*pos, "attempt to index unindexable type").into())
             }
-            Expr::ArrayAssign(name, idx, val) => {
+            Expr::IndexAssign(name, idx, val) => {
                 let name = var_lookup(&name.to_string(), self)?;
                 let idx = match *idx.evaluate(Rc::clone(&env), locals)? {
                     LoxValue::Integer(i) if i >= 0 => i as usize,
                     _ => return Ok(Rc::new(LoxValue::Nil)),
                 };
                 let value = val.evaluate(env, locals)?;
-                if let LoxValue::Array(ref vec) = *name {
-                    return match vec.borrow_mut().get_mut(idx) {
-                        Some(curr) => {
-                            *curr = Rc::clone(&value);
-                            Ok(value)
+                match *name {
+                    LoxValue::Array(ref vec) => {
+                        if vec.borrow().len() < idx {
+                            vec.borrow_mut().resize(idx + 1, Rc::new(LoxValue::Nil));
                         }
-                        None => Ok(Rc::new(LoxValue::Nil)),
-                    };
+                        match vec.borrow_mut().get_mut(idx) {
+                            Some(curr) => {
+                                *curr = Rc::clone(&value);
+                                Ok(value)
+                            }
+                            None => Ok(Rc::new(LoxValue::Nil)),
+                        }
+                    }
+                    _ => Err(InnerError::new(*pos, "attempt to index unindexable type").into()),
                 }
-                Err(InnerError::new(*pos, "attempt to index unindexable type").into())
             }
         }
     }
@@ -280,8 +285,8 @@ impl Expr {
                 }
                 *tk.span()
             }
-            Expr::ArrayIndex(name, idx) => Span::new(name.span().start(), idx.position().end()),
-            Expr::ArrayAssign(name, _, val) => Span::new(name.span().start(), val.position().end()),
+            Expr::Index(name, idx) => Span::new(name.span().start(), idx.position().end()),
+            Expr::IndexAssign(name, _, val) => Span::new(name.span().start(), val.position().end()),
         }
     }
 

@@ -420,7 +420,7 @@ impl<'a> Parser<'a> {
             return match expr {
                 Expr::Variable(name) => Ok(Expr::Assign(name, Box::new(val))),
                 Expr::Get(object, name) => Ok(Expr::Set(object, name, Box::new(val))),
-                Expr::ArrayIndex(name, idx) => Ok(Expr::ArrayAssign(name, idx, Box::new(val))),
+                Expr::Index(name, idx) => Ok(Expr::IndexAssign(name, idx, Box::new(val))),
                 _ => Err(InnerError::new(expr.position(), "invalid assigment target").into()),
             };
         }
@@ -550,7 +550,7 @@ impl<'a> Parser<'a> {
                         let idx = self.expression()?;
                         self.consume(Punctuator::CloseBracket, "expected `]` after index")?;
                         idx.to_string();
-                        return Ok(Expr::ArrayIndex(tk.to_owned(), Box::new(idx)));
+                        return Ok(Expr::Index(tk.to_owned(), Box::new(idx)));
                     }
                     Expr::Variable(tk.to_owned())
                 }
