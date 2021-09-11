@@ -147,16 +147,25 @@ impl std::fmt::Display for LoxValue {
                 write!(f, "{}", instance)
             }
             LoxValue::Array(values) => {
-                write!(
-                    f,
-                    "[{}]",
-                    values
-                        .borrow()
-                        .iter()
-                        .map(|v| v.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
+                let values = values.borrow();
+                let mut counter = 0;
+                let mut printable = Vec::with_capacity(values.len());
+                for value in &*values {
+                    match **value {
+                        LoxValue::Nil => {
+                            counter += 1;
+                            continue;
+                        }
+                        _ => {
+                            if counter != 0 {
+                                printable.push(format!("<{} empty values>", counter));
+                                counter = 0;
+                            }
+                            printable.push(value.to_string());
+                        }
+                    }
+                }
+                write!(f, "[{}]", printable.join(", "))
             }
         }
     }
@@ -164,27 +173,8 @@ impl std::fmt::Display for LoxValue {
 impl std::fmt::Debug for LoxValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &*self {
-            LoxValue::Decimal(d) => write!(f, "{}", d),
-            LoxValue::Integer(i) => write!(f, "{}", i),
-            LoxValue::Boolean(b) => write!(f, "{}", b),
-            LoxValue::String(s) => write!(f, "{}", s),
-            LoxValue::Callable(callable) => write!(f, "{}", callable.to_string()),
-            LoxValue::Nil => write!(f, "nil"),
-            LoxValue::Instance(instance) => {
-                write!(f, "{}", instance)
-            }
-            LoxValue::Array(values) => {
-                write!(
-                    f,
-                    "[{}]",
-                    values
-                        .borrow()
-                        .iter()
-                        .map(|v| v.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
+            LoxValue::String(s) => write!(f, "\"{}\"", s),
+            s => write!(f, "{}", s.to_string()),
         }
     }
 }

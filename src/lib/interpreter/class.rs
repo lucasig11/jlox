@@ -129,10 +129,11 @@ impl LoxInstance {
 
 impl Display for LoxInstance {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{} instance {{", LoxCallable::to_string(&self.class))?;
-        for (key, val) in &*self.fields.borrow() {
-            write!(f, "\n\t{} = {},", key, val)?;
-        }
-        write!(f, "}}")
+        write!(
+            f,
+            "{} instance {:#?}",
+            LoxCallable::to_string(&self.class),
+            &*self.fields.borrow()
+        )
     }
 }
