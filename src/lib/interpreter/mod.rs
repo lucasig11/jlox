@@ -81,20 +81,36 @@ pub(crate) struct Interpreter {
 impl Interpreter {
     pub fn new(statements: &[Stmt]) -> Self {
         let statements = Vec::from(statements);
-        let globals = Environment::new();
+        let globals = Rc::new(Environment::new());
 
+        Self::define_globals(Rc::clone(&globals));
+
+        Self {
+            statements,
+            globals,
+            locals: Default::default(),
+        }
+    }
+
+    pub fn with_env(statements: &[Stmt], env: Rc<Environment>) -> Self {
+        let statements = Vec::from(statements);
+
+        Self::define_globals(Rc::clone(&env));
+
+        Self {
+            statements,
+            globals: env,
+            locals: Default::default(),
+        }
+    }
+
+    fn define_globals(env: Rc<Environment>) {
         let clock = Rc::new(builtins::Clock::new());
         let read = Rc::new(builtins::Read::new());
 
         // Define native functions
-        globals.define("clock", Rc::new(LoxValue::Callable(clock)));
-        globals.define("read", Rc::new(LoxValue::Callable(read)));
-
-        Self {
-            statements,
-            globals: Rc::new(globals),
-            locals: Default::default(),
-        }
+        env.define("clock", Rc::new(LoxValue::Callable(clock)));
+        env.define("read", Rc::new(LoxValue::Callable(read)));
     }
 
     pub fn resolve(&self, expr: &Expr, depth: usize) -> LoxResult<()> {
