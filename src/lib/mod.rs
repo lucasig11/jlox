@@ -43,7 +43,8 @@ impl Lox {
     }
 
     pub(crate) fn do_repl() -> LoxResult<()> {
-        let mut buf = String::with_capacity(200_000);
+        println!("\u{001b}c");
+        let mut buf = String::with_capacity(4096);
         std::env::set_var("LOX_SRC_FILE", "REPL");
         let env = Rc::new(Environment::new());
         loop {
@@ -64,7 +65,14 @@ impl Lox {
                         return Ok(());
                     }
                 }
-                Self::execute(statements)
+                if statements.is_empty() {
+                    return Ok(());
+                }
+
+                let interpreter = Interpreter::with_env(&statements, Rc::clone(&env));
+                let resolver = Resolver::new(&interpreter);
+                resolver.resolve(&statements).map_err(|e| vec![e])?;
+                interpreter.interpret()
             };
 
             if let Err(errors) = run(buf.to_string()) {
@@ -86,6 +94,7 @@ impl Lox {
         if statements.is_empty() {
             return Ok(());
         }
+
         let interpreter = Interpreter::new(&statements);
         let resolver = Resolver::new(&interpreter);
         resolver.resolve(&statements).map_err(|e| vec![e])?;
