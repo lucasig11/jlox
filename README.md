@@ -103,5 +103,6 @@ print "you wrote: " + prompt;
 - [ ] `import`/`use`
 - [ ] `typeof`
 - [ ] `instanceof`
+- [ ] Compound assignment expressions (`+=`, `-=`, `*=`, `/=`)
 - [ ] Implement indexing for strings
 - [ ] (std) FileSystem
