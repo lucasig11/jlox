@@ -1,0 +1,16 @@
+class Math {
+	static pow(m, n) {
+		let ret = 1;
+		let i;
+		for (i = 0; i < n; i = i + 1) {
+			ret = m * ret;	
+		}
+		return ret;
+	}
+
+	static square(n) { 
+		return n * n;
+	}
+}
+
+

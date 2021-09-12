@@ -1,0 +1,31 @@
+
+class Array {
+	init() {
+		this.buf = [];
+		this.len = 0;
+	}
+	
+	get(idx) {
+		return this.buf[idx];
+	}
+
+	push(val) {
+		this.len = this.len + 1;
+		this.buf[this.len] = val;
+	}
+
+	insert(idx, val) {
+		this.len = this.len + 1;
+		this.buf[idx] = val;
+	}
+	
+	remove(idx, val) {
+		this.buf[idx] = nil;
+		this.len = this.len - 1;
+	}
+
+	len() {
+		return this.len;
+	}
+}
+
