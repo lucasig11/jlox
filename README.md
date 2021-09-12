@@ -9,7 +9,7 @@ Lox is an interpreted, dynamically typed, object-oriented, programming language 
 
 This was made for learning purposes, as an exercise to better understand the Rust programming language and compilers/interpreters in general.
 
-**Language features:** 
+**Language features:**
 - Variables
 - First-class functions
 - Closures
@@ -33,7 +33,7 @@ class Hello {
     say() {
         print "Hello" + this.world;
     }
-    
+
     // Static method
     static world() {
         print "Hello static world";
@@ -41,38 +41,43 @@ class Hello {
 }
 
 // Prints "Hello static world"
-Hello.world(); 
+Hello.world();
 
 let hello = Hello("world");
 
 // Prints "Hello world"
-hello.say(); 
+hello.say();
 
 ```
 
 ### Run
 [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) is required.
 ```shell
-cargo install --git https://github.com/lucasig11/jlox
+
+# Clone the repo
+# Build with cargo
+cargo build --release
 
 # Run the REPL
-jlox
+./target/release/jlox
 
 # Run some script
-jlox examples/script.jlox
+./target/release/jlox examples/script.jlox
+
 ```
 
 ### Differences from the original implementation
 Functionality | Original | Ours
 :- | :-: | :-:
-Inheritance | `<` | `extends` 
+Inheritance | `<` | `extends`
 Variable declaration | `var` | `let`
 Function declaration | `fun` | `fn`
 Integer types | `double` | `32-bit int` and `64-bit float`
-Comma operator | `not implemented` | `let a, b = 1, 2;`
+Dynamic array | `not implemented` | `let arr = [0] * 3; // evals to [0, 0, 0]`
+Comma operator | `not implemented` | `let a, b = 1, 2;` (only in assignments for now)
 Static methods | `not implemented` | `static`
-Pipe operator | `not implemented` | ```2 \|> mul(2) \|> sub(1)``` 
-If statement | ```if (true) // some code``` | ```if true { // some code }```
+Pipe operator | `not implemented` | `2 \|> mul(2) \|> sub(1)`
+If statement | `if (true) // some code` | `if true { // some code }`
 
 ### Builtin functions
 
@@ -93,3 +98,10 @@ print "write something: ";
 let prompt = read();
 print "you wrote: " + prompt;
 ```
+
+#### To-do
+- [ ] `import`/`use`
+- [ ] `typeof`
+- [ ] `instanceof`
+- [ ] Implement indexing for strings
+- [ ] (std) FileSystem
