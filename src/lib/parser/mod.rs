@@ -398,8 +398,17 @@ impl<'a> Parser<'a> {
     fn assignment(&self) -> LoxResult<Expr> {
         let expr = self.or()?;
 
-        if self.matches(Punctuator::Assign) {
-            let val = self.assignment()?;
+        use Punctuator::*;
+        if self.multi_check(&[Assign, AssignAdd, AssignSub, AssignDiv, AssignMul]) {
+            let op = self.inner.previous().unwrap();
+            let val = {
+                let val = self.assignment()?;
+
+                match *op.kind() {
+                    TokenKind::Punctuator(Assign) => val,
+                    _ => Expr::Binary(Box::new(expr.to_owned()), op.to_owned(), Box::new(val)),
+                }
+            };
             return match expr {
                 Expr::Variable(name) => Ok(Expr::Assign(name, Box::new(val))),
                 Expr::Get(object, name) => Ok(Expr::Set(object, name, Box::new(val))),

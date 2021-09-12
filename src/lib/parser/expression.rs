@@ -94,10 +94,10 @@ impl Expr {
                 let rhs = (*rhs).to_owned();
 
                 let result = match *op.kind() {
-                    TokenKind::Punctuator(Sub) => lhs - rhs,
-                    TokenKind::Punctuator(Mul) => lhs * rhs,
-                    TokenKind::Punctuator(Div) => lhs / rhs,
-                    TokenKind::Punctuator(Add) => lhs + rhs,
+                    TokenKind::Punctuator(Sub | AssignSub) => lhs - rhs,
+                    TokenKind::Punctuator(Mul | AssignMul) => lhs * rhs,
+                    TokenKind::Punctuator(Div | AssignDiv) => lhs / rhs,
+                    TokenKind::Punctuator(Add | AssignAdd) => lhs + rhs,
                     TokenKind::Punctuator(GreaterThan) => lhs.gt(&rhs),
                     TokenKind::Punctuator(GreaterThanOrEq) => lhs.ge(&rhs),
                     TokenKind::Punctuator(LessThan) => lhs.lt(&rhs),
