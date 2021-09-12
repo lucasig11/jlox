@@ -392,8 +392,7 @@ impl<'a> Parser<'a> {
     /// Parses an expression.
     #[inline]
     fn expression(&self) -> LoxResult<Expr> {
-        let expr = self.assignment()?;
-        Ok(expr)
+        self.assignment()
     }
 
     fn assignment(&self) -> LoxResult<Expr> {
@@ -689,10 +688,11 @@ impl<'a, T> InnerIter<'a, T> {
 
     #[inline]
     fn advance(&self) -> Option<&T> {
-        if *self.current.borrow() <= self.collection.len() {
+        if *self.current.borrow() < self.collection.len() {
             *self.current.borrow_mut() += 1;
+            return self.previous();
         }
-        self.previous()
+        None
     }
 
     #[inline]
