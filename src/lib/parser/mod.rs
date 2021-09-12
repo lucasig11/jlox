@@ -404,7 +404,7 @@ impl<'a> Parser<'a> {
                 Expr::Variable(name) => Ok(Expr::Assign(name, Box::new(val))),
                 Expr::Get(object, name) => Ok(Expr::Set(object, name, Box::new(val))),
                 Expr::Index(name, idx) => Ok(Expr::IndexAssign(name, idx, Box::new(val))),
-                _ => Err(InnerError::new(expr.position(), "invalid assigment target").into()),
+                _ => Err(InnerError::new(expr.position(), "invalid assignment target").into()),
             };
         }
         Ok(expr)
