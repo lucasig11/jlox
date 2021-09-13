@@ -31,7 +31,7 @@ mod builtins {
     pub struct Clock;
 
     #[derive(new)]
-    pub struct Read;
+    pub struct Input;
 
     /// Gets the system time as a unix timestamp and return it as a [`LoxValue::Decimal`].
     impl LoxCallable for Clock {
@@ -53,7 +53,7 @@ mod builtins {
     }
 
     /// Reads a line from stdin, returning it as a [`LoxValue::String`]
-    impl LoxCallable for Read {
+    impl LoxCallable for Input {
         fn call(
             &self,
             _: Rc<Environment>,
@@ -106,11 +106,11 @@ impl Interpreter {
 
     fn define_globals(env: Rc<Environment>) {
         let clock = Rc::new(builtins::Clock::new());
-        let read = Rc::new(builtins::Read::new());
+        let input = Rc::new(builtins::Input::new());
 
         // Define native functions
         env.define("clock", Rc::new(LoxValue::Callable(clock)));
-        env.define("read", Rc::new(LoxValue::Callable(read)));
+        env.define("input", Rc::new(LoxValue::Callable(input)));
     }
 
     pub fn resolve(&self, expr: &Expr, depth: usize) -> LoxResult<()> {
