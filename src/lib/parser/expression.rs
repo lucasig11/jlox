@@ -223,26 +223,38 @@ impl Expr {
             Expr::Index(name, idx) => {
                 let name = var_lookup(&name.to_string(), self)?;
                 let idx = match *idx.evaluate(env, locals)? {
-                    LoxValue::Integer(i) if i >= 0 => i as usize,
+                    LoxValue::Integer(i) => i,
                     _ => return Ok(Rc::new(LoxValue::Nil)),
                 };
                 match *name {
-                    LoxValue::Array(ref vec) => match vec.borrow().get(idx) {
-                        Some(val) => Ok(Rc::clone(val)),
-                        None => Ok(Rc::new(LoxValue::Nil)),
-                    },
+                    LoxValue::Array(ref vec) => {
+                        let idx = if idx < 0 {
+                            (vec.borrow().len() as isize + idx) as usize
+                        } else {
+                            idx as usize
+                        };
+                        match vec.borrow().get(idx) {
+                            Some(val) => Ok(Rc::clone(val)),
+                            None => Ok(Rc::new(LoxValue::Nil)),
+                        }
+                    }
                     _ => Err(InnerError::new(*pos, "attempt to index unindexable type").into()),
                 }
             }
             Expr::IndexAssign(name, idx, val) => {
                 let name = var_lookup(&name.to_string(), self)?;
                 let idx = match *idx.evaluate(Rc::clone(&env), locals)? {
-                    LoxValue::Integer(i) if i >= 0 => i as usize,
+                    LoxValue::Integer(i) => i,
                     _ => return Ok(Rc::new(LoxValue::Nil)),
                 };
                 let value = val.evaluate(env, locals)?;
                 match *name {
                     LoxValue::Array(ref vec) => {
+                        let idx = if idx < 0 {
+                            (vec.borrow().len() as isize + idx) as usize
+                        } else {
+                            idx as usize
+                        };
                         if vec.borrow().len() < idx {
                             vec.borrow_mut().resize(idx + 1, Rc::new(LoxValue::Nil));
                         }
